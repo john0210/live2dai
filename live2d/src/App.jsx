@@ -7,18 +7,43 @@ function App() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
 
+  // =========================================================
   // 음성 인식 상태
+  // =========================================================
+
   const [isListening, setIsListening] = useState(false)
   const [speechSupported, setSpeechSupported] = useState(true)
 
-  // SpeechRecognition 객체
+  // =========================================================
+  // SpeechRecognition
+  // =========================================================
+
   const recognitionRef = useRef(null)
 
-  // 음성 인식 중 누적된 문장
+  // =========================================================
+  // 음성 인식 최종 문장
+  // =========================================================
+
   const finalTranscriptRef = useRef('')
 
+  // =========================================================
   // 중복 요청 방지
+  // =========================================================
+
   const isSendingRef = useRef(false)
+
+  // =========================================================
+  // 음성 인식 종료 후 자동 전송 중복 방지
+  // =========================================================
+
+  const autoSendRef = useRef(false)
+
+  // =========================================================
+  // 컴포넌트 종료 여부
+  // =========================================================
+
+  const isMountedRef = useRef(true)
+
 
   // =========================================================
   // Live2D 초기화
@@ -35,12 +60,16 @@ function App() {
     delegate.run()
 
     // =======================================================
-    // 음성 인식 초기화
+    // SpeechRecognition 가져오기
     // =======================================================
 
     const SpeechRecognition =
       window.SpeechRecognition ||
       window.webkitSpeechRecognition
+
+    // =======================================================
+    // 음성 인식 미지원
+    // =======================================================
 
     if (!SpeechRecognition) {
       console.warn(
@@ -48,112 +77,210 @@ function App() {
       )
 
       setSpeechSupported(false)
-    } else {
-      const recognition = new SpeechRecognition()
 
-      // 한국어 인식
-      recognition.lang = 'ko-KR'
+      return () => {
+        isMountedRef.current = false
 
-      // 중간 결과도 받음
-      recognition.interimResults = true
+        window.speechSynthesis.cancel()
 
-      // 한 번 말할 때 계속 인식
-      recognition.continuous = false
-
-      recognition.onstart = () => {
-        console.log('🎤 음성 인식 시작')
-        setIsListening(true)
-
-        finalTranscriptRef.current = ''
+        LAppDelegate.releaseInstance()
       }
+    }
 
-      recognition.onresult = (event) => {
-        let finalText = ''
-        let interimText = ''
+    // =======================================================
+    // SpeechRecognition 생성
+    // =======================================================
 
-        for (
-          let i = event.resultIndex;
-          i < event.results.length;
-          i++
-        ) {
-          const transcript =
-            event.results[i][0].transcript
+    const recognition = new SpeechRecognition()
 
-          if (event.results[i].isFinal) {
-            finalText += transcript
-          } else {
-            interimText += transcript
-          }
+    recognition.lang = 'ko-KR'
+
+    // 중간 결과 받기
+    recognition.interimResults = true
+
+    // 한 번의 질문 단위로 인식
+    recognition.continuous = false
+
+    // =======================================================
+    // 음성 인식 시작
+    // =======================================================
+
+    recognition.onstart = () => {
+      console.log('🎤 음성 인식 시작')
+
+      setIsListening(true)
+
+      finalTranscriptRef.current = ''
+      autoSendRef.current = false
+    }
+
+    // =======================================================
+    // 음성 인식 결과
+    // =======================================================
+
+    recognition.onresult = (event) => {
+      let finalText = ''
+      let interimText = ''
+
+      for (
+        let i = event.resultIndex;
+        i < event.results.length;
+        i++
+      ) {
+        const transcript =
+          event.results[i][0].transcript
+
+        if (event.results[i].isFinal) {
+          finalText += transcript
+        } else {
+          interimText += transcript
         }
-
-        // 확정된 음성
-        if (finalText) {
-          finalTranscriptRef.current += finalText
-        }
-
-        // 화면 입력창에 현재 인식 결과 표시
-        setInput(
-          finalTranscriptRef.current +
-            interimText
-        )
       }
 
       // =====================================================
-      // 사용자가 말을 끝냈을 때
+      // 확정된 문장 저장
       // =====================================================
 
-      recognition.onend = () => {
-        console.log('🎤 음성 인식 종료')
+      if (finalText) {
+        finalTranscriptRef.current += finalText
+      }
 
-        setIsListening(false)
+      // =====================================================
+      // 화면 입력창에 실시간 표시
+      // =====================================================
 
-        const text =
-          finalTranscriptRef.current.trim()
+      const currentText =
+        finalTranscriptRef.current +
+        interimText
+
+      setInput(currentText)
+
+      console.log(
+        '🎤 현재 인식:',
+        currentText
+      )
+    }
+
+    // =======================================================
+    // ★ 핵심
+    // 사용자가 말을 끝내면 자동으로 AI에게 전송
+    // =======================================================
+
+    recognition.onend = () => {
+      console.log('🎤 음성 인식 종료')
+
+      setIsListening(false)
+
+      const text =
+        finalTranscriptRef.current.trim()
+
+      console.log(
+        '🎤 최종 인식 문장:',
+        text
+      )
+
+      // =====================================================
+      // 이미 자동 전송했다면 다시 보내지 않음
+      // =====================================================
+
+      if (autoSendRef.current) {
+        return
+      }
+
+      // =====================================================
+      // 실제 문장이 존재하면 자동 전송
+      // =====================================================
+
+      if (text) {
+        autoSendRef.current = true
 
         console.log(
-          '🎤 최종 인식 문장:',
+          '🤖 음성 질문 자동 전송:',
           text
         )
 
-        // 음성이 실제로 인식되었다면
-        // 자동으로 AI에게 전송
-        if (text) {
+        // 아주 짧은 지연을 줘서
+        // 모바일 브라우저의 recognition 종료 처리를 기다림
+        setTimeout(() => {
+          if (!isMountedRef.current) {
+            return
+          }
+
           sendMessage(text)
-        }
+        }, 100)
       }
-
-      recognition.onerror = (event) => {
-        console.error(
-          '🎤 음성 인식 오류:',
-          event.error
-        )
-
-        setIsListening(false)
-
-        // 사용자가 말을 안 했을 때는
-        // 별도 오류 메시지를 만들지 않음
-        if (
-          event.error === 'not-allowed'
-        ) {
-          alert(
-            '마이크 사용 권한을 허용해주세요.'
-          )
-        }
-      }
-
-      recognitionRef.current = recognition
     }
+
+    // =======================================================
+    // 음성 인식 오류
+    // =======================================================
+
+    recognition.onerror = (event) => {
+      console.error(
+        '🎤 음성 인식 오류:',
+        event.error
+      )
+
+      setIsListening(false)
+
+      // =====================================================
+      // 권한 거부
+      // =====================================================
+
+      if (event.error === 'not-allowed') {
+        alert(
+          '마이크 사용 권한을 허용해주세요.'
+        )
+      }
+
+      // =====================================================
+      // 음성 없음
+      // =====================================================
+
+      if (event.error === 'no-speech') {
+        console.log(
+          '🎤 음성이 감지되지 않았습니다.'
+        )
+      }
+
+      // =====================================================
+      // 네트워크 오류
+      // =====================================================
+
+      if (event.error === 'network') {
+        console.error(
+          '🎤 음성 인식 네트워크 오류'
+        )
+      }
+    }
+
+    // =======================================================
+    // SpeechRecognition 저장
+    // =======================================================
+
+    recognitionRef.current = recognition
 
     // =======================================================
     // Cleanup
     // =======================================================
 
     return () => {
+      isMountedRef.current = false
+
       window.speechSynthesis.cancel()
 
       if (recognitionRef.current) {
-        recognitionRef.current.stop()
+        try {
+          recognitionRef.current.stop()
+        } catch (error) {
+          console.log(
+            '음성 인식 종료:',
+            error
+          )
+        }
       }
+
+      recognitionRef.current = null
 
       LAppDelegate.releaseInstance()
     }
@@ -165,10 +292,17 @@ function App() {
   // =========================================================
 
   const changeExpression = (expressionId) => {
-    const delegate =
-      LAppDelegate.getInstance()
+    try {
+      const delegate =
+        LAppDelegate.getInstance()
 
-    delegate.setExpression(expressionId)
+      delegate.setExpression(expressionId)
+    } catch (error) {
+      console.error(
+        'Live2D 표정 변경 실패:',
+        error
+      )
+    }
   }
 
 
@@ -194,6 +328,11 @@ function App() {
     const expressionId =
       expressionMap[emotion] || 'F01'
 
+    console.log(
+      'Live2D 표정:',
+      expressionId
+    )
+
     changeExpression(expressionId)
   }
 
@@ -207,6 +346,11 @@ function App() {
       console.error(
         '이 브라우저는 음성 합성을 지원하지 않습니다.'
       )
+
+      return
+    }
+
+    if (!text) {
       return
     }
 
@@ -214,19 +358,48 @@ function App() {
       '🔊 AI 음성 출력 시작'
     )
 
+    // =====================================================
+    // 기존 AI 음성 중지
+    // =====================================================
+
     window.speechSynthesis.cancel()
+
+    // =====================================================
+    // 음성 객체
+    // =====================================================
 
     const utterance =
       new SpeechSynthesisUtterance(text)
 
+    // =====================================================
+    // 한국어
+    // =====================================================
+
     utterance.lang = 'ko-KR'
+
+    // =====================================================
+    // 말하기 속도 / 음높이
+    // =====================================================
 
     utterance.rate = 1.05
     utterance.pitch = 1.25
     utterance.volume = 1.0
 
+    // =====================================================
+    // 사용 가능한 음성
+    // =====================================================
+
     const voices =
       window.speechSynthesis.getVoices()
+
+    console.log(
+      '사용 가능한 음성:',
+      voices
+    )
+
+    // =====================================================
+    // 한국어 음성만 선택
+    // =====================================================
 
     const koreanVoices =
       voices.filter((voice) =>
@@ -234,6 +407,10 @@ function App() {
           .toLowerCase()
           .startsWith('ko')
       )
+
+    // =====================================================
+    // 여성 음성 우선
+    // =====================================================
 
     const femaleVoice =
       koreanVoices.find((voice) => {
@@ -248,15 +425,37 @@ function App() {
         )
       })
 
+    // =====================================================
+    // 음성 선택
+    // =====================================================
+
     if (femaleVoice) {
+      console.log(
+        '🔊 여성 음성 선택:',
+        femaleVoice.name
+      )
+
       utterance.voice =
         femaleVoice
     } else if (
       koreanVoices.length > 0
     ) {
+      console.log(
+        '🔊 한국어 음성 선택:',
+        koreanVoices[0].name
+      )
+
       utterance.voice =
         koreanVoices[0]
+    } else {
+      console.log(
+        '🔊 한국어 음성을 찾지 못했습니다.'
+      )
     }
+
+    // =====================================================
+    // 음성 시작
+    // =====================================================
 
     utterance.onstart = () => {
       console.log(
@@ -264,18 +463,30 @@ function App() {
       )
     }
 
+    // =====================================================
+    // 음성 종료
+    // =====================================================
+
     utterance.onend = () => {
       console.log(
         '🔊 AI 음성 재생 종료'
       )
     }
 
+    // =====================================================
+    // 음성 오류
+    // =====================================================
+
     utterance.onerror = (event) => {
       console.error(
-        '🔊 음성 재생 오류:',
+        '🔊 AI 음성 재생 오류:',
         event
       )
     }
+
+    // =====================================================
+    // 음성 재생
+    // =====================================================
 
     window.speechSynthesis.speak(
       utterance
@@ -284,10 +495,14 @@ function App() {
 
 
   // =========================================================
-  // 음성 질문 시작
+  // ★ 음성 질문 시작
   // =========================================================
 
   const startListening = () => {
+    // =====================================================
+    // SpeechRecognition 지원 여부
+    // =====================================================
+
     if (!recognitionRef.current) {
       alert(
         '이 브라우저에서는 음성 인식을 사용할 수 없습니다.'
@@ -296,19 +511,38 @@ function App() {
       return
     }
 
+    // =====================================================
     // 이미 듣고 있다면 중지
+    // =====================================================
+
     if (isListening) {
+      console.log(
+        '🎤 음성 인식 수동 종료'
+      )
+
       recognitionRef.current.stop()
+
       return
     }
 
-    // AI 음성이 나오고 있다면 중지
+    // =====================================================
+    // AI 음성이 재생 중이라면 중지
+    // =====================================================
+
     window.speechSynthesis.cancel()
 
+    // =====================================================
     // 이전 문장 초기화
+    // =====================================================
+
     finalTranscriptRef.current = ''
+    autoSendRef.current = false
 
     setInput('')
+
+    // =====================================================
+    // 음성 인식 시작
+    // =====================================================
 
     try {
       recognitionRef.current.start()
@@ -318,7 +552,7 @@ function App() {
       )
     } catch (error) {
       console.error(
-        '음성 인식 시작 실패:',
+        '🎤 음성 인식 시작 실패:',
         error
       )
     }
@@ -326,27 +560,38 @@ function App() {
 
 
   // =========================================================
-  // AI 서버에 메시지 전송
+  // ★ AI 서버에 메시지 전송
   // =========================================================
 
   const sendMessage = async (text) => {
     const cleanText =
       text.trim()
 
+    // =====================================================
+    // 빈 질문 방지
+    // =====================================================
+
     if (!cleanText) {
       return
     }
 
-    // 중복 요청 방지
+    // =====================================================
+    // 이미 요청 중이면 중복 요청 방지
+    // =====================================================
+
     if (isSendingRef.current) {
+      console.log(
+        '이미 AI 요청 처리 중입니다.'
+      )
+
       return
     }
 
     isSendingRef.current = true
 
-    // =======================================================
-    // 사용자 메시지 추가
-    // =======================================================
+    // =====================================================
+    // 사용자 메시지 화면에 추가
+    // =====================================================
 
     setMessages((prevMessages) => [
       ...prevMessages,
@@ -356,21 +601,36 @@ function App() {
       },
     ])
 
+    // =====================================================
+    // 입력창 비우기
+    // =====================================================
+
     setInput('')
 
+    // =====================================================
+    // AI가 생각하는 동안 표정
+    // =====================================================
+
+    changeExpression('F05')
+
     try {
-      // =====================================================
+      // ===================================================
       // API 주소
-      // =====================================================
+      // ===================================================
 
       const API_URL =
         import.meta.env.DEV
           ? 'http://localhost:3000/api/chat'
           : '/api/chat'
 
-      // =====================================================
-      // Gemini 서버 요청
-      // =====================================================
+      console.log(
+        '🤖 AI 서버 요청:',
+        cleanText
+      )
+
+      // ===================================================
+      // 서버 요청
+      // ===================================================
 
       const response =
         await fetch(
@@ -389,61 +649,77 @@ function App() {
           }
         )
 
+      // ===================================================
+      // 서버 오류
+      // ===================================================
+
       if (!response.ok) {
         throw new Error(
-          '서버 응답 오류'
+          `서버 응답 오류: ${response.status}`
         )
       }
+
+      // ===================================================
+      // JSON
+      // ===================================================
 
       const data =
         await response.json()
 
       console.log(
-        '서버 응답:',
+        '🤖 서버 응답:',
         data
       )
 
       console.log(
-        'AI 답변:',
+        '🤖 AI 답변:',
         data.reply
       )
 
       console.log(
-        'AI 감정:',
+        '🤖 AI 감정:',
         data.emotion
       )
 
-      // =====================================================
+      // ===================================================
       // AI 답변 화면 표시
-      // =====================================================
+      // ===================================================
 
       setMessages((prevMessages) => [
         ...prevMessages,
         {
           role: 'ai',
-          content: data.reply,
+          content:
+            data.reply ||
+            '답변을 받지 못했습니다.',
         },
       ])
 
-      // =====================================================
-      // 감정 → Live2D 표정
-      // =====================================================
+      // ===================================================
+      // 감정 → Live2D
+      // ===================================================
 
       changeEmotion(
         data.emotion
       )
 
-      // =====================================================
+      // ===================================================
       // AI 음성 출력
-      // =====================================================
+      // ===================================================
 
-      speakAI(data.reply)
+      if (data.reply) {
+        speakAI(data.reply)
+      }
 
     } catch (error) {
       console.error(
-        '채팅 요청 실패:',
+        '❌ 채팅 요청 실패:',
         error
       )
+
+      // ===================================================
+      // 오류 메시지
+      // ===================================================
 
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -454,9 +730,17 @@ function App() {
         },
       ])
 
+      // ===================================================
+      // 오류 → 슬픈 표정
+      // ===================================================
+
       changeExpression('F03')
 
     } finally {
+      // ===================================================
+      // 요청 종료
+      // ===================================================
+
       isSendingRef.current = false
     }
   }
@@ -476,13 +760,24 @@ function App() {
       return
     }
 
-    // 음성 인식 중이라면 중지
+    // =====================================================
+    // 음성 인식 중이면 중지
+    // =====================================================
+
     if (
       recognitionRef.current &&
       isListening
     ) {
-      recognitionRef.current.stop()
+      try {
+        recognitionRef.current.stop()
+      } catch (error) {
+        console.log(error)
+      }
     }
+
+    // =====================================================
+    // AI 전송
+    // =====================================================
 
     await sendMessage(text)
   }
@@ -500,6 +795,10 @@ function App() {
       ===================================================== */}
 
       <div className="chat-container">
+
+        {/* ===================================================
+            헤더
+        =================================================== */}
 
         <div className="chat-header">
           Live 2D AI
@@ -542,6 +841,10 @@ function App() {
           onSubmit={handleSubmit}
         >
 
+          {/* =================================================
+              입력창
+          ================================================= */}
+
           <input
             type="text"
             value={input}
@@ -552,7 +855,7 @@ function App() {
             }
             placeholder={
               isListening
-                ? '듣고 있습니다...'
+                ? '🎤 듣고 있습니다...'
                 : '질문을 입력하세요...'
             }
           />
@@ -587,10 +890,12 @@ function App() {
 
 
           {/* =================================================
-              전송
+              전송 버튼
           ================================================= */}
 
-          <button type="submit">
+          <button
+            type="submit"
+          >
             전송
           </button>
 
@@ -676,4 +981,3 @@ function App() {
 }
 
 export default App
-
