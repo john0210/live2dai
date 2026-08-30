@@ -231,7 +231,7 @@ export class LAppDelegate {
       canvas.style.left = '0';
       canvas.style.top = '0';
       canvas.style.zIndex = '0';
-      canvas.style.pointerEvents = 'auto';
+      canvas.style.pointerEvents = 'none';
 
       document.body.appendChild(canvas);
     }
