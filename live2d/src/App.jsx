@@ -7,7 +7,10 @@ function App() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
 
+  // =========================
   // Live2D 초기화
+  // =========================
+
   useEffect(() => {
     const delegate = LAppDelegate.getInstance()
 
@@ -17,17 +20,60 @@ function App() {
     }
 
     delegate.run()
+
+    return () => {
+      LAppDelegate.releaseInstance()
+    }
   }, [])
 
+
+  // =========================
   // Live2D 표정 변경
+  // =========================
+
   const changeExpression = (expressionId) => {
     const delegate = LAppDelegate.getInstance()
 
     delegate.setExpression(expressionId)
   }
 
+
+  // =========================
+  // Gemini 감정 → Live2D 표정
+  // =========================
+
+  const changeEmotion = (emotion) => {
+
+    console.log('Gemini 감정:', emotion)
+
+    const expressionMap = {
+      happy: 'F01',
+      surprised: 'F02',
+      sad: 'F03',
+      angry: 'F04',
+      thinking: 'F05',
+      neutral: 'F01',
+    }
+
+    const expressionId =
+      expressionMap[emotion] || 'F01'
+
+    console.log(
+      'Live2D 표정 변경:',
+      emotion,
+      '→',
+      expressionId
+    )
+
+    changeExpression(expressionId)
+  }
+
+
+  // =========================
   // 채팅 메시지 전송
-  const handleSubmit = (e) => {
+  // =========================
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     const text = input.trim()
@@ -36,7 +82,11 @@ function App() {
       return
     }
 
+
+    // =========================
     // 사용자 메시지 추가
+    // =========================
+
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -45,23 +95,113 @@ function App() {
       },
     ])
 
+
     // 입력창 비우기
+
     setInput('')
 
-    // 임시 AI 응답
-    setTimeout(() => {
+
+    // =========================
+    // Express 서버 요청
+    // =========================
+
+    try {
+
+      const response = await fetch(
+        'http://localhost:3000/api/chat',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+          },
+
+          body: JSON.stringify({
+            message: text,
+          }),
+        }
+      )
+
+
+      // 서버 오류 확인
+
+      if (!response.ok) {
+        throw new Error('서버 응답 오류')
+      }
+
+
+      // =========================
+      // 서버 응답 JSON
+      // =========================
+
+      const data = await response.json()
+
+      console.log('서버 응답:', data)
+
+      console.log(
+        'AI 답변:',
+        data.reply
+      )
+
+      console.log(
+        'AI 감정:',
+        data.emotion
+      )
+
+
+      // =========================
+      // AI 답변 화면에 추가
+      // =========================
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
           role: 'ai',
-          content: '안녕하세요. 저는 Live2D AI 캐릭터입니다.',
+          content: data.reply,
         },
       ])
 
-      // AI 응답에 따른 표정 변경
-      changeExpression('F01')
-    }, 500)
+
+      // =========================
+      // Gemini 감정에 따라
+      // Live2D 표정 변경
+      // =========================
+
+      changeEmotion(data.emotion)
+
+
+    } catch (error) {
+
+      console.error(
+        '채팅 요청 실패:',
+        error
+      )
+
+
+      // =========================
+      // 오류 메시지
+      // =========================
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          role: 'ai',
+          content:
+            '서버와 연결할 수 없습니다.',
+        },
+      ])
+
+
+      // 오류가 발생하면 슬픈 표정
+
+      changeExpression('F03')
+    }
   }
+
+
+  // =========================
+  // 화면
+  // =========================
 
   return (
     <div className="app">
@@ -69,13 +209,18 @@ function App() {
       {/* =========================
           채팅 UI
       ========================= */}
+
       <div className="chat-container">
 
         <div className="chat-header">
           Live 2D AI
         </div>
 
-        {/* 메시지 영역 */}
+
+        {/* =========================
+            메시지 영역
+        ========================= */}
+
         <div className="messages">
 
           {messages.length === 0 && (
@@ -83,6 +228,7 @@ function App() {
               AI에게 질문해보세요.
             </div>
           )}
+
 
           {messages.map((message, index) => (
             <div
@@ -95,7 +241,11 @@ function App() {
 
         </div>
 
-        {/* 입력 영역 */}
+
+        {/* =========================
+            입력 영역
+        ========================= */}
+
         <form
           className="chat-input-area"
           onSubmit={handleSubmit}
@@ -104,7 +254,9 @@ function App() {
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) =>
+              setInput(e.target.value)
+            }
             placeholder="질문을 입력하세요..."
           />
 
@@ -118,39 +270,79 @@ function App() {
 
 
       {/* =========================
-          표정 버튼
+          수동 표정 테스트 버튼
       ========================= */}
+
       <div className="expression-buttons">
 
-        <button onClick={() => changeExpression('F01')}>
+        <button
+          onClick={() =>
+            changeExpression('F01')
+          }
+        >
           표정 1
         </button>
 
-        <button onClick={() => changeExpression('F02')}>
+
+        <button
+          onClick={() =>
+            changeExpression('F02')
+          }
+        >
           표정 2
         </button>
 
-        <button onClick={() => changeExpression('F03')}>
+
+        <button
+          onClick={() =>
+            changeExpression('F03')
+          }
+        >
           표정 3
         </button>
 
-        <button onClick={() => changeExpression('F04')}>
+
+        <button
+          onClick={() =>
+            changeExpression('F04')
+          }
+        >
           표정 4
         </button>
 
-        <button onClick={() => changeExpression('F05')}>
+
+        <button
+          onClick={() =>
+            changeExpression('F05')
+          }
+        >
           표정 5
         </button>
 
-        <button onClick={() => changeExpression('F06')}>
+
+        <button
+          onClick={() =>
+            changeExpression('F06')
+          }
+        >
           표정 6
         </button>
 
-        <button onClick={() => changeExpression('F07')}>
+
+        <button
+          onClick={() =>
+            changeExpression('F07')
+          }
+        >
           표정 7
         </button>
 
-        <button onClick={() => changeExpression('F08')}>
+
+        <button
+          onClick={() =>
+            changeExpression('F08')
+          }
+        >
           표정 8
         </button>
 
