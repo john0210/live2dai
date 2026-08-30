@@ -1,16 +1,28 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LAppDelegate } from './live2d/lappdelegate'
 import './App.css'
 
 function App() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
-  const [speechReady, setSpeechReady] = useState(false)
 
-  // =========================
+  // 음성 인식 상태
+  const [isListening, setIsListening] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(true)
+
+  // SpeechRecognition 객체
+  const recognitionRef = useRef(null)
+
+  // 음성 인식 중 누적된 문장
+  const finalTranscriptRef = useRef('')
+
+  // 중복 요청 방지
+  const isSendingRef = useRef(false)
+
+  // =========================================================
   // Live2D 초기화
-  // =========================
+  // =========================================================
 
   useEffect(() => {
     const delegate = LAppDelegate.getInstance()
@@ -22,80 +34,153 @@ function App() {
 
     delegate.run()
 
-    // =========================
-    // 음성 목록 로딩
-    // =========================
+    // =======================================================
+    // 음성 인식 초기화
+    // =======================================================
 
-    const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices()
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition
 
-      console.log('사용 가능한 음성:', voices)
+    if (!SpeechRecognition) {
+      console.warn(
+        '이 브라우저는 음성 인식을 지원하지 않습니다.'
+      )
 
-      if (voices.length > 0) {
-        setSpeechReady(true)
+      setSpeechSupported(false)
+    } else {
+      const recognition = new SpeechRecognition()
+
+      // 한국어 인식
+      recognition.lang = 'ko-KR'
+
+      // 중간 결과도 받음
+      recognition.interimResults = true
+
+      // 한 번 말할 때 계속 인식
+      recognition.continuous = false
+
+      recognition.onstart = () => {
+        console.log('🎤 음성 인식 시작')
+        setIsListening(true)
+
+        finalTranscriptRef.current = ''
       }
+
+      recognition.onresult = (event) => {
+        let finalText = ''
+        let interimText = ''
+
+        for (
+          let i = event.resultIndex;
+          i < event.results.length;
+          i++
+        ) {
+          const transcript =
+            event.results[i][0].transcript
+
+          if (event.results[i].isFinal) {
+            finalText += transcript
+          } else {
+            interimText += transcript
+          }
+        }
+
+        // 확정된 음성
+        if (finalText) {
+          finalTranscriptRef.current += finalText
+        }
+
+        // 화면 입력창에 현재 인식 결과 표시
+        setInput(
+          finalTranscriptRef.current +
+            interimText
+        )
+      }
+
+      // =====================================================
+      // 사용자가 말을 끝냈을 때
+      // =====================================================
+
+      recognition.onend = () => {
+        console.log('🎤 음성 인식 종료')
+
+        setIsListening(false)
+
+        const text =
+          finalTranscriptRef.current.trim()
+
+        console.log(
+          '🎤 최종 인식 문장:',
+          text
+        )
+
+        // 음성이 실제로 인식되었다면
+        // 자동으로 AI에게 전송
+        if (text) {
+          sendMessage(text)
+        }
+      }
+
+      recognition.onerror = (event) => {
+        console.error(
+          '🎤 음성 인식 오류:',
+          event.error
+        )
+
+        setIsListening(false)
+
+        // 사용자가 말을 안 했을 때는
+        // 별도 오류 메시지를 만들지 않음
+        if (
+          event.error === 'not-allowed'
+        ) {
+          alert(
+            '마이크 사용 권한을 허용해주세요.'
+          )
+        }
+      }
+
+      recognitionRef.current = recognition
     }
 
-    loadVoices()
-
-    window.speechSynthesis.onvoiceschanged = loadVoices
+    // =======================================================
+    // Cleanup
+    // =======================================================
 
     return () => {
       window.speechSynthesis.cancel()
-      window.speechSynthesis.onvoiceschanged = null
+
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
 
       LAppDelegate.releaseInstance()
     }
   }, [])
 
 
-  // =========================
-  // 모바일 음성 활성화
-  // =========================
-
-  const activateSpeech = () => {
-    if (!window.speechSynthesis) {
-      console.error(
-        '이 브라우저는 음성 합성을 지원하지 않습니다.'
-      )
-      return
-    }
-
-    console.log('음성 엔진 활성화')
-
-    // 현재 음성을 중지
-    window.speechSynthesis.cancel()
-
-    // 아주 짧은 빈 음성을 실행
-    // 모바일 브라우저의 음성 엔진을 활성화하기 위한 용도
-    const utterance =
-      new SpeechSynthesisUtterance('')
-
-    utterance.volume = 0
-
-    window.speechSynthesis.speak(utterance)
-
-    setSpeechReady(true)
-  }
-
-
-  // =========================
+  // =========================================================
   // Live2D 표정 변경
-  // =========================
+  // =========================================================
 
   const changeExpression = (expressionId) => {
-    const delegate = LAppDelegate.getInstance()
+    const delegate =
+      LAppDelegate.getInstance()
 
     delegate.setExpression(expressionId)
   }
 
 
-  // =========================
+  // =========================================================
   // Gemini 감정 → Live2D 표정
-  // =========================
+  // =========================================================
 
   const changeEmotion = (emotion) => {
-    console.log('Gemini 감정:', emotion)
+    console.log(
+      'Gemini 감정:',
+      emotion
+    )
 
     const expressionMap = {
       happy: 'F01',
@@ -109,20 +194,13 @@ function App() {
     const expressionId =
       expressionMap[emotion] || 'F01'
 
-    console.log(
-      'Live2D 표정 변경:',
-      emotion,
-      '→',
-      expressionId
-    )
-
     changeExpression(expressionId)
   }
 
 
-  // =========================
+  // =========================================================
   // AI 음성 출력
-  // =========================
+  // =========================================================
 
   const speakAI = (text) => {
     if (!window.speechSynthesis) {
@@ -132,45 +210,23 @@ function App() {
       return
     }
 
-    console.log('AI 음성 출력 시작')
+    console.log(
+      '🔊 AI 음성 출력 시작'
+    )
 
-    // 이전 음성 중지
     window.speechSynthesis.cancel()
 
     const utterance =
       new SpeechSynthesisUtterance(text)
 
-    // =========================
-    // 한국어
-    // =========================
-
     utterance.lang = 'ko-KR'
-
-    // =========================
-    // 목소리 설정
-    // =========================
 
     utterance.rate = 1.05
     utterance.pitch = 1.25
     utterance.volume = 1.0
 
-
-    // =========================
-    // 음성 목록
-    // =========================
-
     const voices =
       window.speechSynthesis.getVoices()
-
-    console.log(
-      '현재 사용 가능한 음성:',
-      voices
-    )
-
-
-    // =========================
-    // 한국어 음성 찾기
-    // =========================
 
     const koreanVoices =
       voices.filter((voice) =>
@@ -178,16 +234,6 @@ function App() {
           .toLowerCase()
           .startsWith('ko')
       )
-
-    console.log(
-      '한국어 음성:',
-      koreanVoices
-    )
-
-
-    // =========================
-    // 여성 음성 우선 선택
-    // =========================
 
     const femaleVoice =
       koreanVoices.find((voice) => {
@@ -202,49 +248,26 @@ function App() {
         )
       })
 
-
-    // =========================
-    // 음성 선택
-    // =========================
-
     if (femaleVoice) {
-
-      console.log(
-        '선택된 여성 음성:',
-        femaleVoice.name
-      )
-
       utterance.voice =
         femaleVoice
-
-    } else if (koreanVoices.length > 0) {
-
-      console.log(
-        '한국어 기본 음성 사용:',
-        koreanVoices[0].name
-      )
-
+    } else if (
+      koreanVoices.length > 0
+    ) {
       utterance.voice =
         koreanVoices[0]
-
-    } else {
-
-      console.log(
-        '한국어 음성을 찾지 못했습니다.'
-      )
     }
 
-
-    // =========================
-    // 음성 이벤트
-    // =========================
-
     utterance.onstart = () => {
-      console.log('🔊 AI 음성 재생 시작')
+      console.log(
+        '🔊 AI 음성 재생 시작'
+      )
     }
 
     utterance.onend = () => {
-      console.log('🔊 AI 음성 재생 종료')
+      console.log(
+        '🔊 AI 음성 재생 종료'
+      )
     }
 
     utterance.onerror = (event) => {
@@ -254,98 +277,123 @@ function App() {
       )
     }
 
-
-    // =========================
-    // 음성 재생
-    // =========================
-
     window.speechSynthesis.speak(
       utterance
     )
   }
 
 
-  // =========================
-  // 채팅 메시지 전송
-  // =========================
+  // =========================================================
+  // 음성 질문 시작
+  // =========================================================
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const startListening = () => {
+    if (!recognitionRef.current) {
+      alert(
+        '이 브라우저에서는 음성 인식을 사용할 수 없습니다.'
+      )
 
-    const text = input.trim()
-
-    if (!text) {
       return
     }
 
+    // 이미 듣고 있다면 중지
+    if (isListening) {
+      recognitionRef.current.stop()
+      return
+    }
 
-    // =========================
-    // ★ 중요
-    // 사용자가 전송 버튼을 누른
-    // 순간 음성 엔진 활성화
-    // =========================
+    // AI 음성이 나오고 있다면 중지
+    window.speechSynthesis.cancel()
 
-    activateSpeech()
+    // 이전 문장 초기화
+    finalTranscriptRef.current = ''
+
+    setInput('')
+
+    try {
+      recognitionRef.current.start()
+
+      console.log(
+        '🎤 마이크 듣기 시작'
+      )
+    } catch (error) {
+      console.error(
+        '음성 인식 시작 실패:',
+        error
+      )
+    }
+  }
 
 
-    // =========================
+  // =========================================================
+  // AI 서버에 메시지 전송
+  // =========================================================
+
+  const sendMessage = async (text) => {
+    const cleanText =
+      text.trim()
+
+    if (!cleanText) {
+      return
+    }
+
+    // 중복 요청 방지
+    if (isSendingRef.current) {
+      return
+    }
+
+    isSendingRef.current = true
+
+    // =======================================================
     // 사용자 메시지 추가
-    // =========================
+    // =======================================================
 
     setMessages((prevMessages) => [
       ...prevMessages,
       {
         role: 'user',
-        content: text,
+        content: cleanText,
       },
     ])
 
-
-    // 입력창 비우기
     setInput('')
 
-
-    // =========================
-    // AI 서버 요청
-    // =========================
-
     try {
+      // =====================================================
+      // API 주소
+      // =====================================================
 
-      const API_URL = import.meta.env.DEV
-        ? 'http://localhost:3000/api/chat'
-        : '/api/chat'
+      const API_URL =
+        import.meta.env.DEV
+          ? 'http://localhost:3000/api/chat'
+          : '/api/chat'
 
+      // =====================================================
+      // Gemini 서버 요청
+      // =====================================================
 
-      const response = await fetch(
-        API_URL,
-        {
-          method: 'POST',
+      const response =
+        await fetch(
+          API_URL,
+          {
+            method: 'POST',
 
-          headers: {
-            'Content-Type': 'application/json',
-          },
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
 
-          body: JSON.stringify({
-            message: text,
-          }),
-        }
-      )
-
-
-      // =========================
-      // 서버 오류 확인
-      // =========================
+            body: JSON.stringify({
+              message: cleanText,
+            }),
+          }
+        )
 
       if (!response.ok) {
         throw new Error(
           '서버 응답 오류'
         )
       }
-
-
-      // =========================
-      // 서버 응답 JSON
-      // =========================
 
       const data =
         await response.json()
@@ -365,10 +413,9 @@ function App() {
         data.emotion
       )
 
-
-      // =========================
-      // AI 답변 화면에 추가
-      // =========================
+      // =====================================================
+      // AI 답변 화면 표시
+      // =====================================================
 
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -378,37 +425,25 @@ function App() {
         },
       ])
 
-
-      // =========================
-      // Gemini 감정
-      // → Live2D 표정
-      // =========================
+      // =====================================================
+      // 감정 → Live2D 표정
+      // =====================================================
 
       changeEmotion(
         data.emotion
       )
 
+      // =====================================================
+      // AI 음성 출력
+      // =====================================================
 
-      // =========================
-      // AI 답변 음성 출력
-      // =========================
-
-      speakAI(
-        data.reply
-      )
-
+      speakAI(data.reply)
 
     } catch (error) {
-
       console.error(
         '채팅 요청 실패:',
         error
       )
-
-
-      // =========================
-      // 오류 메시지
-      // =========================
 
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -419,27 +454,50 @@ function App() {
         },
       ])
 
+      changeExpression('F03')
 
-      // 오류 발생 시
-      // 슬픈 표정
-
-      changeExpression(
-        'F03'
-      )
+    } finally {
+      isSendingRef.current = false
     }
   }
 
 
-  // =========================
+  // =========================================================
+  // 텍스트 채팅 전송
+  // =========================================================
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    const text =
+      input.trim()
+
+    if (!text) {
+      return
+    }
+
+    // 음성 인식 중이라면 중지
+    if (
+      recognitionRef.current &&
+      isListening
+    ) {
+      recognitionRef.current.stop()
+    }
+
+    await sendMessage(text)
+  }
+
+
+  // =========================================================
   // 화면
-  // =========================
+  // =========================================================
 
   return (
     <div className="app">
 
-      {/* =========================
+      {/* =====================================================
           채팅 UI
-      ========================= */}
+      ===================================================== */}
 
       <div className="chat-container">
 
@@ -448,9 +506,9 @@ function App() {
         </div>
 
 
-        {/* =========================
-            메시지 영역
-        ========================= */}
+        {/* ===================================================
+            메시지
+        =================================================== */}
 
         <div className="messages">
 
@@ -475,9 +533,9 @@ function App() {
         </div>
 
 
-        {/* =========================
+        {/* ===================================================
             입력 영역
-        ========================= */}
+        =================================================== */}
 
         <form
           className="chat-input-area"
@@ -488,11 +546,49 @@ function App() {
             type="text"
             value={input}
             onChange={(e) =>
-              setInput(e.target.value)
+              setInput(
+                e.target.value
+              )
             }
-            placeholder="질문을 입력하세요..."
+            placeholder={
+              isListening
+                ? '듣고 있습니다...'
+                : '질문을 입력하세요...'
+            }
           />
 
+
+          {/* =================================================
+              마이크 버튼
+          ================================================= */}
+
+          {speechSupported && (
+            <button
+              type="button"
+              className={`mic-button ${
+                isListening
+                  ? 'listening'
+                  : ''
+              }`}
+              onClick={
+                startListening
+              }
+              title={
+                isListening
+                  ? '음성 인식 중지'
+                  : '음성으로 질문'
+              }
+            >
+              {isListening
+                ? '■'
+                : '🎤'}
+            </button>
+          )}
+
+
+          {/* =================================================
+              전송
+          ================================================= */}
 
           <button type="submit">
             전송
@@ -503,9 +599,9 @@ function App() {
       </div>
 
 
-      {/* =========================
-          수동 표정 테스트 버튼
-      ========================= */}
+      {/* =====================================================
+          표정 테스트 버튼
+      ===================================================== */}
 
       <div className="expression-buttons">
 
