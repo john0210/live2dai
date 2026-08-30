@@ -105,10 +105,14 @@ body {
     flex-direction: column;
 
     gap: 10px;
+
+    -webkit-overflow-scrolling: touch;
 }
 
 
-/* 메시지 공통 */
+/* =========================
+   메시지
+========================= */
 
 .message {
     max-width: 75%;
@@ -127,7 +131,7 @@ body {
 }
 
 
-/* 사용자 */
+/* 사용자 메시지 */
 
 .message.user {
     align-self: flex-end;
@@ -136,7 +140,7 @@ body {
 }
 
 
-/* AI */
+/* AI 메시지 */
 
 .message.ai {
     align-self: flex-start;
@@ -145,7 +149,9 @@ body {
 }
 
 
-/* 처음 화면 */
+/* =========================
+   처음 화면
+========================= */
 
 .empty-message {
     margin: auto;
@@ -157,7 +163,7 @@ body {
 
 
 /* =========================
-   입력창
+   입력 영역
 ========================= */
 
 .chat-input-area {
@@ -171,7 +177,7 @@ body {
 }
 
 
-/* 입력 */
+/* 입력창 */
 
 .chat-input-area input {
     flex: 1;
@@ -199,9 +205,11 @@ body {
 }
 
 
-/* 전송 */
+/* 전송 버튼 */
 
 .chat-input-area button {
+    flex-shrink: 0;
+
     border: none;
 
     padding: 0 18px;
@@ -267,6 +275,8 @@ body {
     font-size: 12px;
 
     cursor: pointer;
+
+    touch-action: manipulation;
 }
 
 
@@ -287,28 +297,154 @@ body {
 @media (max-width: 700px) {
 
     .chat-container {
-        width: 94vw;
+        width: calc(100vw - 24px);
 
         height: 300px;
 
-        bottom: 100px;
+        left: 50%;
+
+        bottom: 95px;
+
+        border-radius: 14px;
+    }
+
+
+    .chat-header {
+        padding: 12px 14px;
+
+        font-size: 14px;
+    }
+
+
+    .messages {
+        padding: 12px;
+
+        gap: 8px;
+    }
+
+
+    .message {
+        max-width: 85%;
+
+        padding: 9px 12px;
+
+        font-size: 13px;
+
+        line-height: 1.45;
+    }
+
+
+    .chat-input-area {
+        gap: 6px;
+
+        padding: 8px;
+    }
+
+
+    .chat-input-area input {
+        padding: 11px 12px;
+
+        font-size: 14px;
+    }
+
+
+    .chat-input-area button {
+        padding: 0 14px;
+
+        font-size: 13px;
     }
 
 
     .expression-buttons {
-        width: 94vw;
+        width: calc(100vw - 24px);
+
+        max-width: 500px;
 
         justify-content: center;
 
         flex-wrap: wrap;
 
-        bottom: 20px;
+        gap: 5px;
+
+        padding: 7px;
+
+        bottom: 15px;
     }
 
 
     .expression-buttons button {
-        padding: 7px 10px;
+        min-width: 45px;
+
+        padding: 7px 9px;
 
         font-size: 11px;
+    }
+}
+
+
+/* =========================
+   아주 작은 휴대폰
+========================= */
+
+@media (max-width: 400px) {
+
+    .chat-container {
+        height: 280px;
+
+        bottom: 90px;
+    }
+
+
+    .chat-header {
+        padding: 10px 12px;
+    }
+
+
+    .messages {
+        padding: 10px;
+    }
+
+
+    .expression-buttons {
+        gap: 4px;
+
+        padding: 6px;
+    }
+
+
+    .expression-buttons button {
+        min-width: 40px;
+
+        padding: 6px 7px;
+
+        font-size: 10px;
+    }
+}
+
+
+/* =========================
+   가로 모드
+========================= */
+
+@media (max-width: 900px) and (orientation: landscape) {
+
+    .chat-container {
+        width: min(600px, 80vw);
+
+        height: 220px;
+
+        bottom: 70px;
+    }
+
+
+    .expression-buttons {
+        bottom: 10px;
+
+        padding: 5px;
+    }
+
+
+    .expression-buttons button {
+        padding: 5px 8px;
     }
 }
