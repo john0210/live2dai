@@ -224,14 +224,21 @@ export class LAppDelegate {
     for (let i = 0; i < LAppDefine.CanvasNum; i++) {
       const canvas = document.createElement('canvas');
       this._canvases[i] = canvas;
-      canvas.style.width = `${width}vw`;
-      canvas.style.height = `${height}vh`;
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
 
-      canvas.style.position = 'fixed';
-      canvas.style.left = '0';
-      canvas.style.top = '0';
-      canvas.style.zIndex = '0';
-      canvas.style.pointerEvents = 'none';
+        canvas.style.position = 'fixed';
+        canvas.style.left = '0';
+        canvas.style.top = '0';
+
+        canvas.style.zIndex = '0';
+
+        canvas.style.pointerEvents = 'none';
+
+        canvas.style.display = 'block';
+
+        canvas.style.margin = '0';
+        canvas.style.padding = '0';
 
       document.body.appendChild(canvas);
     }
