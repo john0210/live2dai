@@ -9,16 +9,12 @@ body,
     height: 100%;
     margin: 0;
     padding: 0;
-
     overflow: hidden;
 }
 
 body {
     background: transparent;
-
-    font-family:
-        Arial,
-        sans-serif;
+    font-family: Arial, sans-serif;
 }
 
 
@@ -34,7 +30,10 @@ body {
     width: 100%;
     height: 100%;
 
-    z-index: 100;
+    /*
+      Live2D보다 확실히 위에 표시
+    */
+    z-index: 9999;
 
     pointer-events: none;
 }
@@ -58,16 +57,22 @@ body {
     display: flex;
     flex-direction: column;
 
-    background: rgba(20, 20, 20, 0.85);
+    background: rgba(20, 20, 20, 0.9);
 
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.25);
 
     border-radius: 16px;
 
     overflow: hidden;
 
-    z-index: 101;
+    /*
+      최상위 레이어
+    */
+    z-index: 10000;
 
+    /*
+      채팅창은 터치 가능
+    */
     pointer-events: auto;
 }
 
@@ -79,7 +84,7 @@ body {
 .chat-header {
     padding: 14px 18px;
 
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.5);
 
     color: white;
 
@@ -107,6 +112,11 @@ body {
     gap: 10px;
 
     -webkit-overflow-scrolling: touch;
+
+    /*
+      모바일 스크롤
+    */
+    touch-action: pan-y;
 }
 
 
@@ -174,10 +184,17 @@ body {
     padding: 12px;
 
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+    /*
+      입력 영역 터치 허용
+    */
+    pointer-events: auto;
 }
 
 
-/* 입력창 */
+/* =========================
+   입력창
+========================= */
 
 .chat-input-area input {
     flex: 1;
@@ -197,15 +214,21 @@ body {
     color: white;
 
     font-size: 14px;
-}
 
+    /*
+      모바일 입력 허용
+    */
+    pointer-events: auto;
+}
 
 .chat-input-area input::placeholder {
     color: #999;
 }
 
 
-/* 전송 버튼 */
+/* =========================
+   전송 버튼
+========================= */
 
 .chat-input-area button {
     flex-shrink: 0;
@@ -223,11 +246,18 @@ body {
     font-weight: bold;
 
     cursor: pointer;
-}
 
+    pointer-events: auto;
+
+    touch-action: manipulation;
+}
 
 .chat-input-area button:hover {
     background: #eee;
+}
+
+.chat-input-area button:active {
+    transform: scale(0.96);
 }
 
 
@@ -239,6 +269,7 @@ body {
     position: absolute;
 
     left: 50%;
+
     bottom: 30px;
 
     transform: translateX(-50%);
@@ -249,17 +280,22 @@ body {
 
     padding: 10px;
 
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.8);
 
     border-radius: 12px;
 
-    z-index: 102;
+    /*
+      채팅창보다도 위
+    */
+    z-index: 10001;
 
     pointer-events: auto;
 }
 
 
-/* 표정 버튼 */
+/* =========================
+   표정 버튼
+========================= */
 
 .expression-buttons button {
     border: none;
@@ -277,13 +313,13 @@ body {
     cursor: pointer;
 
     touch-action: manipulation;
-}
 
+    pointer-events: auto;
+}
 
 .expression-buttons button:hover {
     background: #eee;
 }
-
 
 .expression-buttons button:active {
     transform: scale(0.95);
@@ -448,3 +484,4 @@ body {
         padding: 5px 8px;
     }
 }
+
