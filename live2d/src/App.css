@@ -1,4 +1,4 @@
-```css * {
+* {
     box-sizing: border-box;
 }
 
@@ -9,16 +9,26 @@ body,
     height: 100%;
     margin: 0;
     padding: 0;
+
     overflow: hidden;
 }
 
 body {
     background: transparent;
+
+    font-family:
+        Arial,
+        sans-serif;
 }
 
-/* React 전체 UI */
+
+/* =========================
+   React 전체 UI
+========================= */
+
 .app {
     position: fixed;
+
     inset: 0;
 
     width: 100%;
@@ -29,18 +39,194 @@ body {
     pointer-events: none;
 }
 
-/* UI 영역 */
-.ui {
-    position: fixed;
-    inset: 0;
 
-    width: 100%;
-    height: 100%;
+/* =========================
+   채팅창
+========================= */
 
-    pointer-events: none;
+.chat-container {
+    position: absolute;
+
+    left: 50%;
+    bottom: 110px;
+
+    transform: translateX(-50%);
+
+    width: min(700px, 90vw);
+    height: 330px;
+
+    display: flex;
+    flex-direction: column;
+
+    background: rgba(20, 20, 20, 0.85);
+
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    border-radius: 16px;
+
+    overflow: hidden;
+
+    z-index: 101;
+
+    pointer-events: auto;
 }
 
-/* 표정 버튼 영역 */
+
+/* =========================
+   채팅 헤더
+========================= */
+
+.chat-header {
+    padding: 14px 18px;
+
+    background: rgba(0, 0, 0, 0.35);
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+/* =========================
+   메시지 영역
+========================= */
+
+.messages {
+    flex: 1;
+
+    padding: 16px;
+
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+
+/* 메시지 공통 */
+
+.message {
+    max-width: 75%;
+
+    padding: 10px 14px;
+
+    border-radius: 12px;
+
+    color: white;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    word-break: break-word;
+}
+
+
+/* 사용자 */
+
+.message.user {
+    align-self: flex-end;
+
+    background: #3b82f6;
+}
+
+
+/* AI */
+
+.message.ai {
+    align-self: flex-start;
+
+    background: #444;
+}
+
+
+/* 처음 화면 */
+
+.empty-message {
+    margin: auto;
+
+    color: #aaa;
+
+    font-size: 14px;
+}
+
+
+/* =========================
+   입력창
+========================= */
+
+.chat-input-area {
+    display: flex;
+
+    gap: 8px;
+
+    padding: 12px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+/* 입력 */
+
+.chat-input-area input {
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 12px 14px;
+
+    border: none;
+
+    outline: none;
+
+    border-radius: 8px;
+
+    background: #333;
+
+    color: white;
+
+    font-size: 14px;
+}
+
+
+.chat-input-area input::placeholder {
+    color: #999;
+}
+
+
+/* 전송 */
+
+.chat-input-area button {
+    border: none;
+
+    padding: 0 18px;
+
+    border-radius: 8px;
+
+    background: white;
+
+    color: #222;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+.chat-input-area button:hover {
+    background: #eee;
+}
+
+
+/* =========================
+   표정 버튼
+========================= */
+
 .expression-buttons {
     position: absolute;
 
@@ -50,47 +236,79 @@ body {
     transform: translateX(-50%);
 
     display: flex;
-    gap: 10px;
 
-    padding: 12px;
+    gap: 8px;
+
+    padding: 10px;
 
     background: rgba(0, 0, 0, 0.75);
 
     border-radius: 12px;
-
-    z-index: 101;
-
-    pointer-events: auto;
-}
-
-/* 버튼 */
-.expression-buttons button {
-    position: relative;
-
-    border: none;
-    border-radius: 8px;
-
-    padding: 10px 16px;
-
-    background: white;
-    color: black;
-
-    font-size: 14px;
-    font-weight: bold;
-
-    cursor: pointer;
 
     z-index: 102;
 
     pointer-events: auto;
 }
 
-.expression-buttons button:hover {
-    background: #eeeeee;
+
+/* 표정 버튼 */
+
+.expression-buttons button {
+    border: none;
+
+    padding: 8px 12px;
+
+    border-radius: 7px;
+
+    background: white;
+
+    color: #222;
+
+    font-size: 12px;
+
+    cursor: pointer;
 }
+
+
+.expression-buttons button:hover {
+    background: #eee;
+}
+
 
 .expression-buttons button:active {
-    transform: scale(0.96);
+    transform: scale(0.95);
 }
 
-```
+
+/* =========================
+   모바일
+========================= */
+
+@media (max-width: 700px) {
+
+    .chat-container {
+        width: 94vw;
+
+        height: 300px;
+
+        bottom: 100px;
+    }
+
+
+    .expression-buttons {
+        width: 94vw;
+
+        justify-content: center;
+
+        flex-wrap: wrap;
+
+        bottom: 20px;
+    }
+
+
+    .expression-buttons button {
+        padding: 7px 10px;
+
+        font-size: 11px;
+    }
+}
