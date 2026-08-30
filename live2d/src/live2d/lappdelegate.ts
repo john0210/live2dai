@@ -14,17 +14,15 @@ import { CubismLogError } from '@framework/utils/cubismdebug';
 export let s_instance: LAppDelegate = null;
 
 /**
- * アプリケーションクラス。
- * Cubism SDKの管理を行う。
+ * Live2D application delegate
  */
 export class LAppDelegate {
+
   /**
-   * クラスのインスタンス（シングルトン）を返す。
-   * インスタンスが生成されていない場合は内部でインスタンスを生成する。
-   *
-   * @return クラスのインスタンス
+   * Singleton
    */
   public static getInstance(): LAppDelegate {
+
     if (s_instance == null) {
       s_instance = new LAppDelegate();
     }
@@ -32,15 +30,27 @@ export class LAppDelegate {
     return s_instance;
   }
 
-   /**추가 */
-  public setExpression(expressionId: string): void {
-  this._subdelegates[0].setExpression(expressionId);
-  }
 
   /**
-   * クラスのインスタンス（シングルトン）を解放する。
+   * Live2D 표정 변경
+   */
+  public setExpression(expressionId: string): void {
+
+    if (
+      this._subdelegates &&
+      this._subdelegates.length > 0
+    ) {
+      this._subdelegates[0].setExpression(expressionId);
+    }
+
+  }
+
+
+  /**
+   * Singleton release
    */
   public static releaseInstance(): void {
+
     if (s_instance != null) {
       s_instance.release();
     }
@@ -48,257 +58,596 @@ export class LAppDelegate {
     s_instance = null;
   }
 
+
   /**
-   * ポインタがアクティブになるときに呼ばれる。
+   * Pointer began
    */
   private onPointerBegan(e: PointerEvent): void {
-    for (let i = 0; i < this._subdelegates.length; i++) {
-      this._subdelegates[i].onPointBegan(e.pageX, e.pageY);
+
+    for (
+      let i = 0;
+      i < this._subdelegates.length;
+      i++
+    ) {
+
+      this._subdelegates[i].onPointBegan(
+        e.pageX,
+        e.pageY
+      );
+
     }
   }
 
+
   /**
-   * ポインタが動いたら呼ばれる。
+   * Pointer moved
    */
   private onPointerMoved(e: PointerEvent): void {
-    for (let i = 0; i < this._subdelegates.length; i++) {
-      this._subdelegates[i].onPointMoved(e.pageX, e.pageY);
+
+    for (
+      let i = 0;
+      i < this._subdelegates.length;
+      i++
+    ) {
+
+      this._subdelegates[i].onPointMoved(
+        e.pageX,
+        e.pageY
+      );
+
     }
   }
 
+
   /**
-   * ポインタがアクティブでなくなったときに呼ばれる。
+   * Pointer ended
    */
   private onPointerEnded(e: PointerEvent): void {
-    for (let i = 0; i < this._subdelegates.length; i++) {
-      this._subdelegates[i].onPointEnded(e.pageX, e.pageY);
+
+    for (
+      let i = 0;
+      i < this._subdelegates.length;
+      i++
+    ) {
+
+      this._subdelegates[i].onPointEnded(
+        e.pageX,
+        e.pageY
+      );
+
     }
   }
 
+
   /**
-   * ポインタがキャンセルされると呼ばれる。
+   * Pointer cancel
    */
   private onPointerCancel(e: PointerEvent): void {
-    for (let i = 0; i < this._subdelegates.length; i++) {
-      this._subdelegates[i].onTouchCancel(e.pageX, e.pageY);
+
+    for (
+      let i = 0;
+      i < this._subdelegates.length;
+      i++
+    ) {
+
+      this._subdelegates[i].onTouchCancel(
+        e.pageX,
+        e.pageY
+      );
+
     }
   }
 
+
   /**
-   * Resize canvas and re-initialize view.
+   * Resize
    */
   public onResize(): void {
-    for (let i = 0; i < this._subdelegates.length; i++) {
+
+    if (!this._subdelegates) {
+      return;
+    }
+
+    for (
+      let i = 0;
+      i < this._subdelegates.length;
+      i++
+    ) {
+
       this._subdelegates[i].onResize();
+
     }
   }
 
+
   /**
-   * 実行処理。
+   * Main loop
    */
   public run(): void {
-    // メインループ
+
     const loop = (): void => {
-      // インスタンスの有無の確認
+
       if (s_instance == null) {
         return;
       }
 
-      // 時間更新
       LAppPal.updateTime();
 
-      for (let i = 0; i < this._subdelegates.length; i++) {
+      for (
+        let i = 0;
+        i < this._subdelegates.length;
+        i++
+      ) {
+
         this._subdelegates[i].update();
+
       }
 
-      // ループのために再帰呼び出し
       requestAnimationFrame(loop);
+
     };
+
     loop();
   }
 
+
   /**
-   * 解放する。
+   * Release
    */
   private release(): void {
+
     this.releaseEventListener();
+
     this.releaseSubdelegates();
 
-    // Cubism SDKの解放
     CubismFramework.dispose();
 
     this._cubismOption = null;
   }
 
-  /**
-   * イベントリスナーを解除する。
-   */
-  private releaseEventListener(): void {
-      document.removeEventListener('pointerdown', this.pointBeganEventListener);
-      document.removeEventListener('pointermove', this.pointMovedEventListener);
-      document.removeEventListener('pointerup', this.pointEndedEventListener);
-      document.removeEventListener('pointercancel', this.pointCancelEventListener);
-  }
 
   /**
-   * Subdelegate を解放する
+   * Remove event listeners
+   */
+  private releaseEventListener(): void {
+
+    document.removeEventListener(
+      'pointerdown',
+      this.pointBeganEventListener
+    );
+
+    document.removeEventListener(
+      'pointermove',
+      this.pointMovedEventListener
+    );
+
+    document.removeEventListener(
+      'pointerup',
+      this.pointEndedEventListener
+    );
+
+    document.removeEventListener(
+      'pointercancel',
+      this.pointCancelEventListener
+    );
+  }
+
+
+  /**
+   * Release subdelegates
    */
   private releaseSubdelegates(): void {
-    for (let i = 0; i < this._subdelegates.length; i++) {
+
+    if (!this._subdelegates) {
+      return;
+    }
+
+    for (
+      let i = 0;
+      i < this._subdelegates.length;
+      i++
+    ) {
+
       this._subdelegates[i].release();
+
     }
 
     this._subdelegates.length = 0;
     this._subdelegates = null;
   }
 
+
   /**
-   * APPに必要な物を初期化する。
+   * Initialize
    */
   public initialize(): boolean {
-    // Cubism SDKの初期化
+
     this.initializeCubism();
 
     this.initializeSubdelegates();
+
     this.initializeEventListener();
 
     return true;
   }
 
+
   /**
-   * イベントリスナーを設定する。
+   * Initialize event listeners
    */
   private initializeEventListener(): void {
-    this.pointBeganEventListener = this.onPointerBegan.bind(this);
-    this.pointMovedEventListener = this.onPointerMoved.bind(this);
-    this.pointEndedEventListener = this.onPointerEnded.bind(this);
-    this.pointCancelEventListener = this.onPointerCancel.bind(this);
 
-    // ポインタ関連コールバック関数登録
-    document.addEventListener('pointerdown', this.pointBeganEventListener, {
-      passive: true
-    });
-    document.addEventListener('pointermove', this.pointMovedEventListener, {
-      passive: true
-    });
-    document.addEventListener('pointerup', this.pointEndedEventListener, {
-      passive: true
-    });
-    document.addEventListener('pointercancel', this.pointCancelEventListener, {
-      passive: true
-    });
+    this.pointBeganEventListener =
+      this.onPointerBegan.bind(this);
+
+    this.pointMovedEventListener =
+      this.onPointerMoved.bind(this);
+
+    this.pointEndedEventListener =
+      this.onPointerEnded.bind(this);
+
+    this.pointCancelEventListener =
+      this.onPointerCancel.bind(this);
+
+
+    document.addEventListener(
+      'pointerdown',
+      this.pointBeganEventListener,
+      {
+        passive: true
+      }
+    );
+
+    document.addEventListener(
+      'pointermove',
+      this.pointMovedEventListener,
+      {
+        passive: true
+      }
+    );
+
+    document.addEventListener(
+      'pointerup',
+      this.pointEndedEventListener,
+      {
+        passive: true
+      }
+    );
+
+    document.addEventListener(
+      'pointercancel',
+      this.pointCancelEventListener,
+      {
+        passive: true
+      }
+    );
   }
 
+
   /**
-   * Cubism SDKの初期化
+   * Initialize Cubism
    */
   private initializeCubism(): void {
+
     LAppPal.updateTime();
 
-    // setup cubism
-    this._cubismOption.logFunction = LAppPal.printMessage;
-    this._cubismOption.loggingLevel = LAppDefine.CubismLoggingLevel;
-    CubismFramework.startUp(this._cubismOption);
+    this._cubismOption.logFunction =
+      LAppPal.printMessage;
 
-    // initialize cubism
+    this._cubismOption.loggingLevel =
+      LAppDefine.CubismLoggingLevel;
+
+    CubismFramework.startUp(
+      this._cubismOption
+    );
+
     CubismFramework.initialize();
   }
 
+
   /**
-   * Canvasを生成配置、Subdelegateを初期化する
+   * Create and initialize canvases
    */
   private initializeSubdelegates(): void {
-    let width: number = 100;
-    let height: number = 100;
-    if (LAppDefine.CanvasNum > 3) {
-      const widthunit: number = Math.ceil(Math.sqrt(LAppDefine.CanvasNum));
-      const heightUnit = Math.ceil(LAppDefine.CanvasNum / widthunit);
-      width = 100.0 / widthunit;
-      height = 100.0 / heightUnit;
-    } else {
-      width = 100.0 / LAppDefine.CanvasNum;
+
+    /*
+     * =====================================================
+     * IMPORTANT
+     * =====================================================
+     *
+     * Live2D canvas는 React UI보다 항상 뒤에 있어야 한다.
+     *
+     * 모바일 브라우저에서 canvas가 React UI를 덮는 문제를
+     * 방지하기 위해 별도의 stacking layer를 만든다.
+     *
+     * =====================================================
+     */
+
+
+    // body 기본 설정
+
+    document.body.style.margin = '0';
+
+    document.body.style.padding = '0';
+
+    document.body.style.width = '100%';
+
+    document.body.style.height = '100%';
+
+    document.body.style.overflow = 'hidden';
+
+
+    /*
+     * Live2D 전용 layer
+     */
+
+    let live2dLayer =
+      document.getElementById('live2d-layer');
+
+
+    if (!live2dLayer) {
+
+      live2dLayer =
+        document.createElement('div');
+
+      live2dLayer.id =
+        'live2d-layer';
+
+
+      live2dLayer.style.position =
+        'fixed';
+
+      live2dLayer.style.left =
+        '0';
+
+      live2dLayer.style.top =
+        '0';
+
+      live2dLayer.style.width =
+        '100vw';
+
+      live2dLayer.style.height =
+        '100vh';
+
+
+      /*
+       * React보다 뒤
+       */
+
+      live2dLayer.style.zIndex =
+        '0';
+
+
+      /*
+       * UI 클릭 방해 금지
+       */
+
+      live2dLayer.style.pointerEvents =
+        'none';
+
+
+      /*
+       * stacking context
+       */
+
+      live2dLayer.style.isolation =
+        'isolate';
+
+
+      document.body.appendChild(
+        live2dLayer
+      );
     }
 
-    this._canvases.length = LAppDefine.CanvasNum;
-    this._subdelegates.length = LAppDefine.CanvasNum;
-    for (let i = 0; i < LAppDefine.CanvasNum; i++) {
-      const canvas = document.createElement('canvas');
-      this._canvases[i] = canvas;
-        canvas.style.width = '100vw';
-        canvas.style.height = '100vh';
 
-        canvas.style.position = 'fixed';
-        canvas.style.left = '0';
-        canvas.style.top = '0';
+    /*
+     * Canvas 개수
+     */
 
-        canvas.style.zIndex = '0';
+    this._canvases.length =
+      LAppDefine.CanvasNum;
 
-        canvas.style.pointerEvents = 'none';
+    this._subdelegates.length =
+      LAppDefine.CanvasNum;
 
-        canvas.style.display = 'block';
 
-        canvas.style.margin = '0';
-        canvas.style.padding = '0';
+    /*
+     * Canvas 생성
+     */
 
-      document.body.appendChild(canvas);
+    for (
+      let i = 0;
+      i < LAppDefine.CanvasNum;
+      i++
+    ) {
+
+      const canvas =
+        document.createElement('canvas');
+
+
+      this._canvases[i] =
+        canvas;
+
+
+      /*
+       * 화면 전체
+       */
+
+      canvas.style.width =
+        '100vw';
+
+      canvas.style.height =
+        '100vh';
+
+
+      /*
+       * 고정 위치
+       */
+
+      canvas.style.position =
+        'absolute';
+
+      canvas.style.left =
+        '0';
+
+      canvas.style.top =
+        '0';
+
+
+      /*
+       * Live2D layer 안에서는 0
+       */
+
+      canvas.style.zIndex =
+        '0';
+
+
+      /*
+       * React UI가 터치 이벤트를 받도록
+       */
+
+      canvas.style.pointerEvents =
+        'none';
+
+
+      canvas.style.display =
+        'block';
+
+
+      canvas.style.margin =
+        '0';
+
+      canvas.style.padding =
+        '0';
+
+
+      /*
+       * canvas 자체가 UI를 만들지 않도록
+       */
+
+      canvas.style.maxWidth =
+        'none';
+
+      canvas.style.maxHeight =
+        'none';
+
+
+      /*
+       * layer 안에 넣는다.
+       *
+       * 기존:
+       * document.body.appendChild(canvas)
+       *
+       * 변경:
+       * live2dLayer.appendChild(canvas)
+       */
+
+      live2dLayer.appendChild(
+        canvas
+      );
     }
 
-    for (let i = 0; i < this._canvases.length; i++) {
-      const subdelegate = new LAppSubdelegate();
-      subdelegate.initialize(this._canvases[i]);
-      this._subdelegates[i] = subdelegate;
+
+    /*
+     * Subdelegate 초기화
+     */
+
+    for (
+      let i = 0;
+      i < this._canvases.length;
+      i++
+    ) {
+
+      const subdelegate =
+        new LAppSubdelegate();
+
+
+      subdelegate.initialize(
+        this._canvases[i]
+      );
+
+
+      this._subdelegates[i] =
+        subdelegate;
     }
 
-    for (let i = 0; i < LAppDefine.CanvasNum; i++) {
-      if (this._subdelegates[i].isContextLost()) {
+
+    /*
+     * WebGL context 확인
+     */
+
+    for (
+      let i = 0;
+      i < LAppDefine.CanvasNum;
+      i++
+    ) {
+
+      if (
+        this._subdelegates[i]
+          .isContextLost()
+      ) {
+
         CubismLogError(
           `The context for Canvas at index ${i} was lost, possibly because the acquisition limit for WebGLRenderingContext was reached.`
         );
+
       }
+
     }
   }
 
-  /**
-   * Privateなコンストラクタ
-   */
-  private constructor() {
-    this._cubismOption = new Option();
-    this._subdelegates = new Array<LAppSubdelegate>();
-    this._canvases = new Array<HTMLCanvasElement>();
-  }
 
   /**
-   * Cubism SDK Option
+   * Constructor
+   */
+  private constructor() {
+
+    this._cubismOption =
+      new Option();
+
+    this._subdelegates =
+      new Array<LAppSubdelegate>();
+
+    this._canvases =
+      new Array<HTMLCanvasElement>();
+  }
+
+
+  /**
+   * Cubism option
    */
   private _cubismOption: Option;
 
-  /**
-   * 操作対象のcanvas要素
-   */
-  private _canvases: Array<HTMLCanvasElement>;
 
   /**
-   * Subdelegate
+   * Canvas
    */
-  private _subdelegates: Array<LAppSubdelegate>;
+  private _canvases:
+    Array<HTMLCanvasElement>;
+
 
   /**
-   * 登録済みイベントリスナー 関数オブジェクト
+   * Subdelegates
    */
-  private pointBeganEventListener: (this: Document, ev: PointerEvent) => void;
+  private _subdelegates:
+    Array<LAppSubdelegate>;
+
 
   /**
-   * 登録済みイベントリスナー 関数オブジェクト
+   * Event listeners
    */
-  private pointMovedEventListener: (this: Document, ev: PointerEvent) => void;
+  private pointBeganEventListener:
+    (this: Document, ev: PointerEvent) => void;
 
-  /**
-   * 登録済みイベントリスナー 関数オブジェクト
-   */
-  private pointEndedEventListener: (this: Document, ev: PointerEvent) => void;
 
-  /**
-   * 登録済みイベントリスナー 関数オブジェクト
-   */
-  private pointCancelEventListener: (this: Document, ev: PointerEvent) => void;
+  private pointMovedEventListener:
+    (this: Document, ev: PointerEvent) => void;
+
+
+  private pointEndedEventListener:
+    (this: Document, ev: PointerEvent) => void;
+
+
+  private pointCancelEventListener:
+    (this: Document, ev: PointerEvent) => void;
 }

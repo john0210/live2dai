@@ -1,7 +1,3 @@
-/* =========================================================
-   기본 설정
-========================================================= */
-
 * {
     box-sizing: border-box;
 }
@@ -12,71 +8,67 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
-}
-
-#root {
-    position: relative;
-
-    width: 100%;
-    height: 100%;
-
-    z-index: 9999;
-}
-
-html {
-    background: transparent;
+    overflow: hidden;
 }
 
 body {
-    background: transparent;
-
-    font-family:
-        Arial,
-        sans-serif;
-
-    /* 모바일 브라우저의 터치 확대 방지 */
-    -webkit-text-size-adjust: 100%;
+    background: #000;
+    font-family: Arial, sans-serif;
 }
 
+/* =========================================
+   React Root
+========================================= */
 
-/* =========================================================
-   React 전체 UI
-========================================================= */
-
-.app {
+#root {
     position: fixed;
-
-    left: 0;
-    top: 0;
+    inset: 0;
 
     width: 100vw;
     height: 100vh;
-    height: 100dvh;
 
-    z-index: 10000;
+    z-index: 100;
+
+    pointer-events: none;
+
+    isolation: isolate;
+}
+
+/* =========================================
+   전체 React UI
+========================================= */
+
+.app {
+    position: fixed;
+    inset: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    z-index: 100;
 
     pointer-events: none;
 }
 
-/* =========================================================
+/* =========================================
    채팅창
-========================================================= */
+========================================= */
 
 .chat-container {
-    position: fixed !important;
+    position: fixed;
 
-    left: 50% !important;
-    bottom: 110px !important;
+    left: 50%;
+    bottom: 110px;
 
-    transform: translateX(-50%) !important;
+    transform: translateX(-50%);
 
-    width: min(700px, calc(100vw - 24px)) !important;
-    height: 330px !important;
+    width: min(700px, 90vw);
+    height: 330px;
 
-    display: flex !important;
-    flex-direction: column !important;
+    display: flex;
+    flex-direction: column;
 
-    background: rgba(20, 20, 20, 0.95) !important;
+    background: rgba(20, 20, 20, 0.92);
 
     border: 1px solid rgba(255, 255, 255, 0.25);
 
@@ -84,46 +76,37 @@ body {
 
     overflow: hidden;
 
-    z-index: 1000000 !important;
+    z-index: 1000;
 
-    visibility: visible !important;
-    opacity: 1 !important;
+    pointer-events: auto;
 
-    pointer-events: auto !important;
-
-    /* 모바일 브라우저에서 레이어 분리 */
-    isolation: isolate;
-
-    /* GPU 레이어 */
-    transform-origin: center center;
+    visibility: visible;
+    opacity: 1;
 }
 
-
-/* =========================================================
+/* =========================================
    채팅 헤더
-========================================================= */
+========================================= */
 
 .chat-header {
     flex-shrink: 0;
 
     padding: 14px 18px;
 
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.5);
 
     color: white;
 
     font-size: 16px;
     font-weight: bold;
 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
-    z-index: 2;
+    border-bottom:
+        1px solid rgba(255, 255, 255, 0.1);
 }
 
-
-/* =========================================================
-   메시지 영역
-========================================================= */
+/* =========================================
+   메시지
+========================================= */
 
 .messages {
     flex: 1;
@@ -133,7 +116,6 @@ body {
     padding: 16px;
 
     overflow-y: auto;
-    overflow-x: hidden;
 
     display: flex;
     flex-direction: column;
@@ -142,20 +124,16 @@ body {
 
     -webkit-overflow-scrolling: touch;
 
-    /* 모바일 세로 스크롤 */
     touch-action: pan-y;
 
-    overscroll-behavior: contain;
+    color: white;
 }
 
-
-/* =========================================================
+/* =========================================
    메시지
-========================================================= */
+========================================= */
 
 .message {
-    flex-shrink: 0;
-
     max-width: 75%;
 
     padding: 10px 14px;
@@ -170,13 +148,8 @@ body {
 
     word-break: break-word;
 
-    overflow-wrap: anywhere;
+    white-space: pre-wrap;
 }
-
-
-/* =========================================================
-   사용자 메시지
-========================================================= */
 
 .message.user {
     align-self: flex-end;
@@ -184,21 +157,15 @@ body {
     background: #3b82f6;
 }
 
-
-/* =========================================================
-   AI 메시지
-========================================================= */
-
 .message.ai {
     align-self: flex-start;
 
     background: #444;
 }
 
-
-/* =========================================================
-   처음 화면
-========================================================= */
+/* =========================================
+   빈 메시지
+========================================= */
 
 .empty-message {
     margin: auto;
@@ -210,10 +177,9 @@ body {
     text-align: center;
 }
 
-
-/* =========================================================
+/* =========================================
    입력 영역
-========================================================= */
+========================================= */
 
 .chat-input-area {
     flex-shrink: 0;
@@ -224,30 +190,27 @@ body {
 
     padding: 12px;
 
+    border-top:
+        1px solid rgba(255, 255, 255, 0.1);
+
+    pointer-events: auto;
+
     background: rgba(20, 20, 20, 0.95);
-
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-
-    pointer-events: auto !important;
-
-    z-index: 3;
 }
 
-
-/* =========================================================
+/* =========================================
    입력창
-========================================================= */
+========================================= */
 
 .chat-input-area input {
     flex: 1;
 
     min-width: 0;
 
-    height: 42px;
-
     padding: 12px 14px;
 
     border: none;
+
     outline: none;
 
     border-radius: 8px;
@@ -258,26 +221,23 @@ body {
 
     font-size: 14px;
 
-    pointer-events: auto !important;
-
-    touch-action: manipulation;
+    pointer-events: auto;
 
     -webkit-appearance: none;
+
+    appearance: none;
 }
 
 .chat-input-area input::placeholder {
     color: #999;
 }
 
-
-/* =========================================================
+/* =========================================
    전송 버튼
-========================================================= */
+========================================= */
 
 .chat-input-area button {
     flex-shrink: 0;
-
-    height: 42px;
 
     border: none;
 
@@ -291,37 +251,33 @@ body {
 
     font-weight: bold;
 
-    font-size: 14px;
-
     cursor: pointer;
 
-    pointer-events: auto !important;
+    pointer-events: auto;
 
     touch-action: manipulation;
 
     -webkit-appearance: none;
-}
 
-.chat-input-area button:hover {
-    background: #eee;
+    appearance: none;
 }
 
 .chat-input-area button:active {
     transform: scale(0.96);
 }
 
-
-/* =========================================================
-   표정 버튼 전체
-========================================================= */
+/* =========================================
+   표정 버튼
+========================================= */
 
 .expression-buttons {
-    position: fixed !important;
+    position: fixed;
 
-    left: 50% !important;
-    bottom: 30px !important;
+    left: 50%;
 
-    transform: translateX(-50%) !important;
+    bottom: 30px;
+
+    transform: translateX(-50%);
 
     display: flex;
 
@@ -333,26 +289,16 @@ body {
 
     border-radius: 12px;
 
-    z-index: 1000001 !important;
+    z-index: 2000;
 
-    visibility: visible !important;
-    opacity: 1 !important;
+    pointer-events: auto;
 
-    pointer-events: auto !important;
+    visibility: visible;
 
-    max-width: calc(100vw - 24px);
-
-    isolation: isolate;
+    opacity: 1;
 }
 
-
-/* =========================================================
-   표정 버튼
-========================================================= */
-
 .expression-buttons button {
-    flex-shrink: 0;
-
     border: none;
 
     padding: 8px 12px;
@@ -369,119 +315,86 @@ body {
 
     touch-action: manipulation;
 
-    pointer-events: auto !important;
+    pointer-events: auto;
 
     -webkit-appearance: none;
-}
 
-.expression-buttons button:hover {
-    background: #eee;
+    appearance: none;
 }
 
 .expression-buttons button:active {
     transform: scale(0.95);
 }
 
-
-/* =========================================================
+/* =========================================
    모바일
-========================================================= */
+========================================= */
 
 @media (max-width: 700px) {
 
-    .app {
-        position: fixed !important;
+    html,
+    body {
+        width: 100%;
+        height: 100%;
 
-        left: 0 !important;
-        top: 0 !important;
-
-        width: 100vw !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-
-        z-index: 999999 !important;
-
-        pointer-events: none !important;
+        overflow: hidden;
     }
 
+    #root {
+        width: 100vw;
+        height: 100dvh;
 
-    /* -----------------------------------------------------
-       모바일 채팅창
-    ----------------------------------------------------- */
+        z-index: 100;
+
+        isolation: isolate;
+    }
+
+    .app {
+        width: 100vw;
+        height: 100dvh;
+
+        z-index: 100;
+    }
+
+    /* =========================
+       채팅
+    ========================= */
 
     .chat-container {
-        position: fixed !important;
+        left: 50%;
 
-        left: 50% !important;
+        bottom: 95px;
 
-        /*
-          하단 브라우저 UI와 겹치지 않도록
-        */
-        bottom: 95px !important;
+        width: calc(100vw - 24px);
 
-        transform: translateX(-50%) !important;
+        height: 300px;
 
-        width: calc(100vw - 24px) !important;
+        max-width: none;
 
-        height: 300px !important;
+        z-index: 1000;
 
-        min-height: 300px !important;
-        max-height: 300px !important;
+        display: flex;
 
-        display: flex !important;
-        flex-direction: column !important;
+        visibility: visible;
 
-        visibility: visible !important;
+        opacity: 1;
 
-        opacity: 1 !important;
-
-        z-index: 1000000 !important;
-
-        pointer-events: auto !important;
-
-        background: rgba(20, 20, 20, 0.96) !important;
-
-        border-radius: 14px !important;
-
-        overflow: hidden !important;
+        pointer-events: auto;
     }
 
-
-    /* -----------------------------------------------------
-       모바일 헤더
-    ----------------------------------------------------- */
-
     .chat-header {
-        flex-shrink: 0;
-
         padding: 12px 14px;
 
         font-size: 14px;
-
-        min-height: 42px;
     }
 
-
-    /* -----------------------------------------------------
-       모바일 메시지
-    ----------------------------------------------------- */
-
     .messages {
-        flex: 1;
-
-        min-height: 0;
-
         padding: 12px;
 
         gap: 8px;
 
-        overflow-y: auto !important;
-
-        overflow-x: hidden !important;
-
-        touch-action: pan-y !important;
+        min-height: 0;
     }
-
 
     .message {
         max-width: 85%;
@@ -493,95 +406,68 @@ body {
         line-height: 1.45;
     }
 
-
-    /* -----------------------------------------------------
-       모바일 입력 영역
-    ----------------------------------------------------- */
+    /* =========================
+       입력
+    ========================= */
 
     .chat-input-area {
-        flex-shrink: 0;
+        display: flex;
 
-        display: flex !important;
+        width: 100%;
 
         gap: 6px;
 
         padding: 8px;
 
-        min-height: 58px;
-
-        visibility: visible !important;
-
-        opacity: 1 !important;
-
-        pointer-events: auto !important;
+        pointer-events: auto;
     }
 
-
-    /* -----------------------------------------------------
-       모바일 입력창
-    ----------------------------------------------------- */
-
     .chat-input-area input {
-        display: block !important;
+        display: block;
 
-        flex: 1;
+        width: 100%;
 
         min-width: 0;
-
-        height: 42px;
 
         padding: 11px 12px;
 
         font-size: 16px;
 
-        visibility: visible !important;
+        visibility: visible;
 
-        opacity: 1 !important;
+        opacity: 1;
 
-        pointer-events: auto !important;
+        pointer-events: auto;
     }
 
-
-    /* -----------------------------------------------------
-       모바일 전송 버튼
-    ----------------------------------------------------- */
-
     .chat-input-area button {
-        display: block !important;
+        display: block;
 
-        flex-shrink: 0;
-
-        height: 42px;
+        min-width: 55px;
 
         padding: 0 14px;
 
         font-size: 13px;
 
-        visibility: visible !important;
+        visibility: visible;
 
-        opacity: 1 !important;
+        opacity: 1;
 
-        pointer-events: auto !important;
+        pointer-events: auto;
     }
 
-
-    /* -----------------------------------------------------
-       모바일 표정 버튼
-    ----------------------------------------------------- */
+    /* =========================
+       표정 버튼
+    ========================= */
 
     .expression-buttons {
-        position: fixed !important;
+        left: 50%;
 
-        left: 50% !important;
-        bottom: 15px !important;
+        bottom: 15px;
 
-        transform: translateX(-50%) !important;
-
-        width: calc(100vw - 24px) !important;
+        width: calc(100vw - 24px);
 
         max-width: 500px;
-
-        display: flex !important;
 
         justify-content: center;
 
@@ -591,15 +477,10 @@ body {
 
         padding: 7px;
 
-        visibility: visible !important;
+        z-index: 2000;
 
-        opacity: 1 !important;
-
-        z-index: 1000001 !important;
-
-        pointer-events: auto !important;
+        pointer-events: auto;
     }
-
 
     .expression-buttons button {
         min-width: 45px;
@@ -608,91 +489,41 @@ body {
 
         font-size: 11px;
 
-        visibility: visible !important;
-
-        opacity: 1 !important;
-
-        pointer-events: auto !important;
+        pointer-events: auto;
     }
 }
 
-
-/* =========================================================
-   아주 작은 휴대폰
-========================================================= */
+/* =========================================
+   작은 휴대폰
+========================================= */
 
 @media (max-width: 400px) {
 
     .chat-container {
-        width: calc(100vw - 16px) !important;
+        bottom: 90px;
 
-        height: 280px !important;
+        height: 280px;
 
-        min-height: 280px !important;
-        max-height: 280px !important;
-
-        bottom: 90px !important;
+        width: calc(100vw - 20px);
     }
-
 
     .chat-header {
         padding: 10px 12px;
-
-        font-size: 13px;
     }
-
 
     .messages {
         padding: 10px;
-
-        gap: 7px;
     }
-
-
-    .message {
-        max-width: 90%;
-
-        padding: 8px 10px;
-
-        font-size: 12px;
-    }
-
-
-    .chat-input-area {
-        padding: 7px;
-
-        gap: 5px;
-    }
-
-
-    .chat-input-area input {
-        height: 40px;
-
-        padding: 10px;
-
-        font-size: 16px;
-    }
-
-
-    .chat-input-area button {
-        height: 40px;
-
-        padding: 0 12px;
-
-        font-size: 12px;
-    }
-
 
     .expression-buttons {
-        width: calc(100vw - 16px) !important;
+        width: calc(100vw - 20px);
 
         gap: 4px;
 
         padding: 6px;
 
-        bottom: 10px !important;
+        bottom: 12px;
     }
-
 
     .expression-buttons button {
         min-width: 40px;
@@ -703,94 +534,27 @@ body {
     }
 }
 
-
-/* =========================================================
-   가로 모드
-========================================================= */
+/* =========================================
+   가로모드
+========================================= */
 
 @media (max-width: 900px) and (orientation: landscape) {
 
     .chat-container {
-        width: min(600px, calc(100vw - 24px)) !important;
+        width: min(600px, 80vw);
 
-        height: 220px !important;
+        height: 220px;
 
-        min-height: 220px !important;
-        max-height: 220px !important;
-
-        bottom: 70px !important;
+        bottom: 70px;
     }
-
-
-    .chat-header {
-        padding: 8px 12px;
-
-        font-size: 13px;
-    }
-
-
-    .messages {
-        padding: 8px;
-
-        gap: 6px;
-    }
-
-
-    .message {
-        padding: 7px 10px;
-
-        font-size: 12px;
-    }
-
-
-    .chat-input-area {
-        padding: 6px;
-    }
-
-
-    .chat-input-area input {
-        height: 36px;
-
-        padding: 8px 10px;
-    }
-
-
-    .chat-input-area button {
-        height: 36px;
-
-        padding: 0 12px;
-    }
-
 
     .expression-buttons {
-        bottom: 8px !important;
+        bottom: 10px;
 
         padding: 5px;
-
-        gap: 4px;
     }
-
 
     .expression-buttons button {
         padding: 5px 8px;
-    }
-}
-
-
-/* =========================================================
-   모바일 브라우저 안전장치
-========================================================= */
-
-@supports (-webkit-touch-callout: none) {
-
-    .app {
-        height: -webkit-fill-available;
-    }
-
-    .chat-container {
-        /*
-          iOS Safari에서 fixed 위치 안정화
-        */
-        -webkit-transform: translateX(-50%);
     }
 }
