@@ -22,6 +22,7 @@ function App() {
     delegate.run()
 
     return () => {
+      window.speechSynthesis.cancel()
       LAppDelegate.releaseInstance()
     }
   }, [])
@@ -43,7 +44,6 @@ function App() {
   // =========================
 
   const changeEmotion = (emotion) => {
-
     console.log('Gemini 감정:', emotion)
 
     const expressionMap = {
@@ -67,6 +67,133 @@ function App() {
 
     changeExpression(expressionId)
   }
+
+
+
+// =========================
+// AI 음성 출력
+// =========================
+
+const speakAI = (text) => {
+  if (!window.speechSynthesis) {
+    console.error(
+      '이 브라우저는 음성 합성을 지원하지 않습니다.'
+    )
+
+    return
+  }
+
+  // 이전 음성 중지
+  window.speechSynthesis.cancel()
+
+  const utterance =
+    new SpeechSynthesisUtterance(text)
+
+  // 한국어
+  utterance.lang = 'ko-KR'
+
+  // =========================
+  // 목소리 설정
+  // =========================
+
+  // 조금 빠르고 밝게
+  utterance.rate = 1.05
+
+  // 음정을 조금 높게
+  // 젊고 밝은 느낌을 위한 설정
+  utterance.pitch = 1.25
+
+  // 볼륨
+  utterance.volume = 1.0
+
+
+  // =========================
+  // 한국어 음성 찾기
+  // =========================
+
+  const voices =
+    window.speechSynthesis.getVoices()
+
+  console.log(
+    '사용 가능한 음성:',
+    voices
+  )
+
+
+  const koreanVoices =
+    voices.filter((voice) =>
+      voice.lang
+        .toLowerCase()
+        .startsWith('ko')
+    )
+
+
+  console.log(
+    '한국어 음성:',
+    koreanVoices
+  )
+
+
+  // =========================
+  // 여성 음성을 우선적으로 찾기
+  // =========================
+
+  const femaleVoice =
+    koreanVoices.find((voice) => {
+
+      const name =
+        voice.name.toLowerCase()
+
+      return (
+        name.includes('female') ||
+        name.includes('woman') ||
+        name.includes('여성') ||
+        name.includes('girl')
+      )
+    })
+
+
+  // =========================
+  // 여성 음성이 있으면 사용
+  // =========================
+
+  if (femaleVoice) {
+
+    console.log(
+      '선택된 여성 음성:',
+      femaleVoice.name
+    )
+
+    utterance.voice = femaleVoice
+
+  } else if (koreanVoices.length > 0) {
+
+    // 여성 음성을 찾지 못하면
+    // 첫 번째 한국어 음성 사용
+
+    console.log(
+      '여성 음성을 찾지 못했습니다.'
+    )
+
+    console.log(
+      '기본 한국어 음성 사용:',
+      koreanVoices[0].name
+    )
+
+    utterance.voice =
+      koreanVoices[0]
+  }
+
+
+  // =========================
+  // 음성 재생
+  // =========================
+
+  window.speechSynthesis.speak(
+    utterance
+  )
+}
+
 
 
   // =========================
@@ -97,7 +224,6 @@ function App() {
 
 
     // 입력창 비우기
-
     setInput('')
 
 
@@ -106,7 +232,6 @@ function App() {
     // =========================
 
     try {
-
       const response = await fetch(
         'http://localhost:3000/api/chat',
         {
@@ -123,7 +248,9 @@ function App() {
       )
 
 
+      // =========================
       // 서버 오류 확인
+      // =========================
 
       if (!response.ok) {
         throw new Error('서버 응답 오류')
@@ -163,15 +290,20 @@ function App() {
 
 
       // =========================
-      // Gemini 감정에 따라
-      // Live2D 표정 변경
+      // Gemini 감정 → Live2D 표정
       // =========================
 
       changeEmotion(data.emotion)
 
 
-    } catch (error) {
+      // =========================
+      // AI 답변 음성 출력
+      // =========================
 
+      speakAI(data.reply)
+
+
+    } catch (error) {
       console.error(
         '채팅 요청 실패:',
         error
@@ -192,8 +324,7 @@ function App() {
       ])
 
 
-      // 오류가 발생하면 슬픈 표정
-
+      // 오류 발생 시 슬픈 표정
       changeExpression('F03')
     }
   }
@@ -283,7 +414,6 @@ function App() {
           표정 1
         </button>
 
-
         <button
           onClick={() =>
             changeExpression('F02')
@@ -291,7 +421,6 @@ function App() {
         >
           표정 2
         </button>
-
 
         <button
           onClick={() =>
@@ -301,7 +430,6 @@ function App() {
           표정 3
         </button>
 
-
         <button
           onClick={() =>
             changeExpression('F04')
@@ -309,7 +437,6 @@ function App() {
         >
           표정 4
         </button>
-
 
         <button
           onClick={() =>
@@ -319,7 +446,6 @@ function App() {
           표정 5
         </button>
 
-
         <button
           onClick={() =>
             changeExpression('F06')
@@ -328,7 +454,6 @@ function App() {
           표정 6
         </button>
 
-
         <button
           onClick={() =>
             changeExpression('F07')
@@ -336,7 +461,6 @@ function App() {
         >
           표정 7
         </button>
-
 
         <button
           onClick={() =>
