@@ -6,6 +6,7 @@ import './App.css'
 function App() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
+  const [speechReady, setSpeechReady] = useState(false)
 
   // =========================
   // Live2D 초기화
@@ -21,11 +22,61 @@ function App() {
 
     delegate.run()
 
+    // =========================
+    // 음성 목록 로딩
+    // =========================
+
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices()
+
+      console.log('사용 가능한 음성:', voices)
+
+      if (voices.length > 0) {
+        setSpeechReady(true)
+      }
+    }
+
+    loadVoices()
+
+    window.speechSynthesis.onvoiceschanged = loadVoices
+
     return () => {
       window.speechSynthesis.cancel()
+      window.speechSynthesis.onvoiceschanged = null
+
       LAppDelegate.releaseInstance()
     }
   }, [])
+
+
+  // =========================
+  // 모바일 음성 활성화
+  // =========================
+
+  const activateSpeech = () => {
+    if (!window.speechSynthesis) {
+      console.error(
+        '이 브라우저는 음성 합성을 지원하지 않습니다.'
+      )
+      return
+    }
+
+    console.log('음성 엔진 활성화')
+
+    // 현재 음성을 중지
+    window.speechSynthesis.cancel()
+
+    // 아주 짧은 빈 음성을 실행
+    // 모바일 브라우저의 음성 엔진을 활성화하기 위한 용도
+    const utterance =
+      new SpeechSynthesisUtterance('')
+
+    utterance.volume = 0
+
+    window.speechSynthesis.speak(utterance)
+
+    setSpeechReady(true)
+  }
 
 
   // =========================
@@ -69,131 +120,149 @@ function App() {
   }
 
 
-
-// =========================
-// AI 음성 출력
-// =========================
-
-const speakAI = (text) => {
-  if (!window.speechSynthesis) {
-    console.error(
-      '이 브라우저는 음성 합성을 지원하지 않습니다.'
-    )
-
-    return
-  }
-
-  // 이전 음성 중지
-  window.speechSynthesis.cancel()
-
-  const utterance =
-    new SpeechSynthesisUtterance(text)
-
-  // 한국어
-  utterance.lang = 'ko-KR'
-
   // =========================
-  // 목소리 설정
+  // AI 음성 출력
   // =========================
 
-  // 조금 빠르고 밝게
-  utterance.rate = 1.05
-
-  // 음정을 조금 높게
-  // 젊고 밝은 느낌을 위한 설정
-  utterance.pitch = 1.25
-
-  // 볼륨
-  utterance.volume = 1.0
-
-
-  // =========================
-  // 한국어 음성 찾기
-  // =========================
-
-  const voices =
-    window.speechSynthesis.getVoices()
-
-  console.log(
-    '사용 가능한 음성:',
-    voices
-  )
-
-
-  const koreanVoices =
-    voices.filter((voice) =>
-      voice.lang
-        .toLowerCase()
-        .startsWith('ko')
-    )
-
-
-  console.log(
-    '한국어 음성:',
-    koreanVoices
-  )
-
-
-  // =========================
-  // 여성 음성을 우선적으로 찾기
-  // =========================
-
-  const femaleVoice =
-    koreanVoices.find((voice) => {
-
-      const name =
-        voice.name.toLowerCase()
-
-      return (
-        name.includes('female') ||
-        name.includes('woman') ||
-        name.includes('여성') ||
-        name.includes('girl')
+  const speakAI = (text) => {
+    if (!window.speechSynthesis) {
+      console.error(
+        '이 브라우저는 음성 합성을 지원하지 않습니다.'
       )
-    })
+      return
+    }
+
+    console.log('AI 음성 출력 시작')
+
+    // 이전 음성 중지
+    window.speechSynthesis.cancel()
+
+    const utterance =
+      new SpeechSynthesisUtterance(text)
+
+    // =========================
+    // 한국어
+    // =========================
+
+    utterance.lang = 'ko-KR'
+
+    // =========================
+    // 목소리 설정
+    // =========================
+
+    utterance.rate = 1.05
+    utterance.pitch = 1.25
+    utterance.volume = 1.0
 
 
-  // =========================
-  // 여성 음성이 있으면 사용
-  // =========================
+    // =========================
+    // 음성 목록
+    // =========================
 
-  if (femaleVoice) {
+    const voices =
+      window.speechSynthesis.getVoices()
 
     console.log(
-      '선택된 여성 음성:',
-      femaleVoice.name
+      '현재 사용 가능한 음성:',
+      voices
     )
 
-    utterance.voice = femaleVoice
 
-  } else if (koreanVoices.length > 0) {
+    // =========================
+    // 한국어 음성 찾기
+    // =========================
 
-    // 여성 음성을 찾지 못하면
-    // 첫 번째 한국어 음성 사용
+    const koreanVoices =
+      voices.filter((voice) =>
+        voice.lang
+          .toLowerCase()
+          .startsWith('ko')
+      )
 
     console.log(
-      '여성 음성을 찾지 못했습니다.'
+      '한국어 음성:',
+      koreanVoices
     )
 
-    console.log(
-      '기본 한국어 음성 사용:',
-      koreanVoices[0].name
-    )
 
-    utterance.voice =
-      koreanVoices[0]
+    // =========================
+    // 여성 음성 우선 선택
+    // =========================
+
+    const femaleVoice =
+      koreanVoices.find((voice) => {
+        const name =
+          voice.name.toLowerCase()
+
+        return (
+          name.includes('female') ||
+          name.includes('woman') ||
+          name.includes('여성') ||
+          name.includes('girl')
+        )
+      })
+
+
+    // =========================
+    // 음성 선택
+    // =========================
+
+    if (femaleVoice) {
+
+      console.log(
+        '선택된 여성 음성:',
+        femaleVoice.name
+      )
+
+      utterance.voice =
+        femaleVoice
+
+    } else if (koreanVoices.length > 0) {
+
+      console.log(
+        '한국어 기본 음성 사용:',
+        koreanVoices[0].name
+      )
+
+      utterance.voice =
+        koreanVoices[0]
+
+    } else {
+
+      console.log(
+        '한국어 음성을 찾지 못했습니다.'
+      )
+    }
+
+
+    // =========================
+    // 음성 이벤트
+    // =========================
+
+    utterance.onstart = () => {
+      console.log('🔊 AI 음성 재생 시작')
+    }
+
+    utterance.onend = () => {
+      console.log('🔊 AI 음성 재생 종료')
+    }
+
+    utterance.onerror = (event) => {
+      console.error(
+        '🔊 음성 재생 오류:',
+        event
+      )
+    }
+
+
+    // =========================
+    // 음성 재생
+    // =========================
+
+    window.speechSynthesis.speak(
+      utterance
+    )
   }
-
-
-  // =========================
-  // 음성 재생
-  // =========================
-
-  window.speechSynthesis.speak(
-    utterance
-  )
-}
-
 
 
   // =========================
@@ -208,6 +277,15 @@ const speakAI = (text) => {
     if (!text) {
       return
     }
+
+
+    // =========================
+    // ★ 중요
+    // 사용자가 전송 버튼을 누른
+    // 순간 음성 엔진 활성화
+    // =========================
+
+    activateSpeech()
 
 
     // =========================
@@ -226,29 +304,32 @@ const speakAI = (text) => {
     // 입력창 비우기
     setInput('')
 
-// =========================
-// AI 서버 요청
-// =========================
 
-try {
-  const API_URL = import.meta.env.DEV
-    ? 'http://localhost:3000/api/chat'
-    : '/api/chat'
+    // =========================
+    // AI 서버 요청
+    // =========================
 
-  const response = await fetch(
-    API_URL,
-    {
-      method: 'POST',
+    try {
 
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      const API_URL = import.meta.env.DEV
+        ? 'http://localhost:3000/api/chat'
+        : '/api/chat'
 
-      body: JSON.stringify({
-        message: text,
-      }),
-    }
-  )
+
+      const response = await fetch(
+        API_URL,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+          },
+
+          body: JSON.stringify({
+            message: text,
+          }),
+        }
+      )
 
 
       // =========================
@@ -256,7 +337,9 @@ try {
       // =========================
 
       if (!response.ok) {
-        throw new Error('서버 응답 오류')
+        throw new Error(
+          '서버 응답 오류'
+        )
       }
 
 
@@ -264,9 +347,13 @@ try {
       // 서버 응답 JSON
       // =========================
 
-      const data = await response.json()
+      const data =
+        await response.json()
 
-      console.log('서버 응답:', data)
+      console.log(
+        '서버 응답:',
+        data
+      )
 
       console.log(
         'AI 답변:',
@@ -293,20 +380,26 @@ try {
 
 
       // =========================
-      // Gemini 감정 → Live2D 표정
+      // Gemini 감정
+      // → Live2D 표정
       // =========================
 
-      changeEmotion(data.emotion)
+      changeEmotion(
+        data.emotion
+      )
 
 
       // =========================
       // AI 답변 음성 출력
       // =========================
 
-      speakAI(data.reply)
+      speakAI(
+        data.reply
+      )
 
 
     } catch (error) {
+
       console.error(
         '채팅 요청 실패:',
         error
@@ -327,8 +420,12 @@ try {
       ])
 
 
-      // 오류 발생 시 슬픈 표정
-      changeExpression('F03')
+      // 오류 발생 시
+      // 슬픈 표정
+
+      changeExpression(
+        'F03'
+      )
     }
   }
 
@@ -364,14 +461,16 @@ try {
           )}
 
 
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`message ${message.role}`}
-            >
-              {message.content}
-            </div>
-          ))}
+          {messages.map(
+            (message, index) => (
+              <div
+                key={index}
+                className={`message ${message.role}`}
+              >
+                {message.content}
+              </div>
+            )
+          )}
 
         </div>
 
@@ -393,6 +492,7 @@ try {
             }
             placeholder="질문을 입력하세요..."
           />
+
 
           <button type="submit">
             전송
