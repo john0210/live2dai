@@ -226,26 +226,29 @@ const speakAI = (text) => {
     // 입력창 비우기
     setInput('')
 
+// =========================
+// AI 서버 요청
+// =========================
 
-    // =========================
-    // Express 서버 요청
-    // =========================
+try {
+  const API_URL = import.meta.env.DEV
+    ? 'http://localhost:3000/api/chat'
+    : '/api/chat'
 
-    try {
-      const response = await fetch(
-        'http://localhost:3000/api/chat',
-        {
-          method: 'POST',
+  const response = await fetch(
+    API_URL,
+    {
+      method: 'POST',
 
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      headers: {
+        'Content-Type': 'application/json',
+      },
 
-          body: JSON.stringify({
-            message: text,
-          }),
-        }
-      )
+      body: JSON.stringify({
+        message: text,
+      }),
+    }
+  )
 
 
       // =========================
