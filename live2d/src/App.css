@@ -485,3 +485,69 @@ body {
     }
 }
 
+/* =========================
+   모바일 채팅창 강제 최상단
+========================= */
+
+@media (max-width: 700px) {
+
+    .app {
+        position: fixed !important;
+        inset: 0 !important;
+
+        width: 100vw !important;
+        height: 100dvh !important;
+
+        z-index: 2147483647 !important;
+
+        pointer-events: none !important;
+    }
+
+    .chat-container {
+        position: fixed !important;
+
+        left: 50% !important;
+        bottom: 95px !important;
+
+        transform: translateX(-50%) !important;
+
+        width: calc(100vw - 24px) !important;
+        height: 300px !important;
+
+        display: flex !important;
+
+        visibility: visible !important;
+        opacity: 1 !important;
+
+        z-index: 2147483647 !important;
+
+        pointer-events: auto !important;
+    }
+
+    .chat-input-area {
+        display: flex !important;
+
+        visibility: visible !important;
+        opacity: 1 !important;
+
+        pointer-events: auto !important;
+    }
+
+    .chat-input-area input {
+        display: block !important;
+
+        visibility: visible !important;
+        opacity: 1 !important;
+
+        pointer-events: auto !important;
+    }
+
+    .chat-input-area button {
+        display: block !important;
+
+        visibility: visible !important;
+        opacity: 1 !important;
+
+        pointer-events: auto !important;
+    }
+}
